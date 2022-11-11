@@ -17,61 +17,64 @@ router.post("/:systemid", async function (req, res, next) {
 			case "read": // read
 				getResource(req.body.resource, resourcePayload);
 				break;
+			case "delete":
+				deleteResource(req.body.resource, req.body.payload);
+				break;
 		}
 
-				const request_format = {
-					action: "",
-					resource: "",
-					payload: {
+		const request_format = {
+			action: "",
+			resource: "",
+			payload: {
 
-					},
-					callback_url: "",
-					user_id: "",
-					task_id: ""
-				}
-
-
-
-
-
-
-			// db.run(
-			// 	`INSERT INTO task (date, systemid, uuid, previous_point_marker, current_point_marker, status, attempts) VALUES(?,?,?,?,?,?,?)`,
-			// 	[
-			// 		moment().format(),
-			// 		req.params.systemid,
-			// 		req.params.systemid + "." + req.body.after,
-			// 		req.body.before,
-			// 		req.body.after,
-			// 		"pending",
-			// 		0,
-			// 	],
-			// 	function (err) {
-			// 		if (err) {
-			// 			res.status(400).json({
-			// 				error: true,
-			// 				message: err.message,
-			// 			});
-			// 			return;
-			// 		}
-			// 		res.status(200).json({
-			// 			error: false,
-			// 			data: this.lastID,
-			// 		});
-			// 		return;
-			// 	}
-			// );
-			// db.close();
-
-
-		} catch (err) {
-			console.error(`Error while sending message `, err.message);
-			next(err);
+			},
+			callback_url: "",
+			user_id: "",
+			task_id: ""
 		}
-	});
 
-function getResource (resourceName, resourcePayload) {
-	
+
+
+
+
+
+		// db.run(
+		// 	`INSERT INTO task (date, systemid, uuid, previous_point_marker, current_point_marker, status, attempts) VALUES(?,?,?,?,?,?,?)`,
+		// 	[
+		// 		moment().format(),
+		// 		req.params.systemid,
+		// 		req.params.systemid + "." + req.body.after,
+		// 		req.body.before,
+		// 		req.body.after,
+		// 		"pending",
+		// 		0,
+		// 	],
+		// 	function (err) {
+		// 		if (err) {
+		// 			res.status(400).json({
+		// 				error: true,
+		// 				message: err.message,
+		// 			});
+		// 			return;
+		// 		}
+		// 		res.status(200).json({
+		// 			error: false,
+		// 			data: this.lastID,
+		// 		});
+		// 		return;
+		// 	}
+		// );
+		// db.close();
+
+
+	} catch (err) {
+		console.error(`Error while sending message `, err.message);
+		next(err);
+	}
+});
+
+function getResource(resourceName, resourcePayload) {
+
 	// map key values with table columns
 	let resourceKeyValuePairs = ""; let resourceId = ""; resourceFilter = "";
 	Object.keys(resourcePayload).forEach(([key, value]) => {
@@ -108,7 +111,7 @@ function getResource (resourceName, resourcePayload) {
 	);
 }
 
-function updateResource (resourceName, resourcePayload) {
+function updateResource(resourceName, resourcePayload) {
 	try {
 		// map key values with table columns
 		let resourceKeyValuePairs = ""; let resourceId = "";
@@ -200,27 +203,48 @@ function createResource(resourceName, resourcePayload, callback) {
 	}
 }
 
-function deleteResource(selectedYear, callback) { // TODO : explore options to flag rows as deleted
-	const db = require("../../services/db").dbConnection();
-	db.all(
-		`SELECT date, systemid, uuid, previous_point_marker, current_point_marker, status FROM task ORDER BY id`,
-		[],
-		function (err, rows) {
-			if (err) {
-				db.close();
-				callback(null, []);
+function deleteResource(resourceName, resourcePayload) { // TODO : explore options to flag rows as deleted
+	try {
+		// map key values with table columns
+		let resourceKeyValuePairs = ""; let resourceId = "";
+		Object.keys(resourcePayload).forEach(([key, value]) => {
+			if (key === "id") {
+				resourceId = value;
 			} else {
-				if (rows.length > 0) {
-					const filtered = rows.filter((task) => {
-						return task.date.split("-")[0] == selectedYear;
-					});
-					callback(null, filtered);
+				if (resourceKeyValuePairs === "") {
+					resourceKeyValuePairs = `${key} = '${value}'`;
 				} else {
-					callback(null, []);
+					resourceKeyValuePairs += `, ${key} = '${value}'`;
 				}
 			}
-		}
-	);
+		});
+
+		const db = require("../../services/db").dbConnection();
+		const moment = require("moment");
+		db.run(
+			`UPDATE ${resourceName} SET deleted = '1', date_updated = '${moment().format()}' WHERE id = '${resourceId}'`,
+			[],
+			function (err) {
+				if (err) { // TODO : confirm if this is correct
+					return {
+						error: true,
+						message: err.message,
+					};
+				}
+				return {
+					error: false,
+					message: "row was deleted",
+				};
+			}
+		);
+		db.close();
+	} catch (error) {
+		res.status(400).json({
+			error: true,
+			message: err.message,
+		});
+		return;
+	}
 }
 
 module.exports = router;
