@@ -37,6 +37,9 @@ app.use("/api/task", require("./routes/api/task"));
 /* incidents route */
 app.use("/api/incident", require("./routes/api/incident"));
 
+/* resources route - this works for all tables */
+app.use("/api/resource", require("./routes/api/resource"));
+
 /* Error handler middleware */
 app.use((err, req, res, next) => {
   const statusCode = err.statusCode || 500;
