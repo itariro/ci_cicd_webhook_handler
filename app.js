@@ -32,13 +32,14 @@ app.get("/", (req, res) => {
 app.use(express.static(path.join(__dirname, "public")));
 
 /* tasks route */
-app.use("/api/task", require("./routes/api/task"));
+app.use("/api/v1/task", require("./routes/api/task"));
 
 /* incidents route */
-app.use("/api/incident", require("./routes/api/incident"));
+app.use("/api/v1/incident", require("./routes/api/incident"));
 
 /* resources route - this works for all tables */
-app.use("/api/resource", require("./routes/api/resource"));
+app.use("/api/v1/resource", require("./routes/api/resource"));
+app.use("/api/v1/data", require("./routes/api/data"));
 
 /* Error handler middleware */
 app.use((err, req, res, next) => {

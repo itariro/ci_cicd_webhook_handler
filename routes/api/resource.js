@@ -15,65 +15,80 @@ router.post("/:systemid", async function (req, res, next) {
 				updateResource(req.body.resource, req.body.payload);
 				break;
 			case "read": // read
-
+				getResource(req.body.resource, resourcePayload);
 				break;
 		}
 
-		const request_format = {
-			action: "",
-			resource: "",
-			payload: {
+				const request_format = {
+					action: "",
+					resource: "",
+					payload: {
 
-			},
-			callback_url: "",
-			user_id: "",
-			task_id: ""
+					},
+					callback_url: "",
+					user_id: "",
+					task_id: ""
+				}
+
+
+
+
+
+
+			// db.run(
+			// 	`INSERT INTO task (date, systemid, uuid, previous_point_marker, current_point_marker, status, attempts) VALUES(?,?,?,?,?,?,?)`,
+			// 	[
+			// 		moment().format(),
+			// 		req.params.systemid,
+			// 		req.params.systemid + "." + req.body.after,
+			// 		req.body.before,
+			// 		req.body.after,
+			// 		"pending",
+			// 		0,
+			// 	],
+			// 	function (err) {
+			// 		if (err) {
+			// 			res.status(400).json({
+			// 				error: true,
+			// 				message: err.message,
+			// 			});
+			// 			return;
+			// 		}
+			// 		res.status(200).json({
+			// 			error: false,
+			// 			data: this.lastID,
+			// 		});
+			// 		return;
+			// 	}
+			// );
+			// db.close();
+
+
+		} catch (err) {
+			console.error(`Error while sending message `, err.message);
+			next(err);
 		}
+	});
 
+function getResource (resourceName, resourcePayload) {
+	
+	// map key values with table columns
+	let resourceKeyValuePairs = ""; let resourceId = "";
+	Object.keys(resourcePayload).forEach(([key, value]) => {
+		if (key === "id") {
+			resourceId = value;
+		} else {
+			if (resourceKeyValuePairs === "") {
+				resourceKeyValuePairs = `${key} = '${value}'`;
+			} else {
+				resourceKeyValuePairs += `, ${key} = '${value}'`;
+			}
+		}
+	});
 
-
-
-
-
-		// db.run(
-		// 	`INSERT INTO task (date, systemid, uuid, previous_point_marker, current_point_marker, status, attempts) VALUES(?,?,?,?,?,?,?)`,
-		// 	[
-		// 		moment().format(),
-		// 		req.params.systemid,
-		// 		req.params.systemid + "." + req.body.after,
-		// 		req.body.before,
-		// 		req.body.after,
-		// 		"pending",
-		// 		0,
-		// 	],
-		// 	function (err) {
-		// 		if (err) {
-		// 			res.status(400).json({
-		// 				error: true,
-		// 				message: err.message,
-		// 			});
-		// 			return;
-		// 		}
-		// 		res.status(200).json({
-		// 			error: false,
-		// 			data: this.lastID,
-		// 		});
-		// 		return;
-		// 	}
-		// );
-		// db.close();
-
-
-	} catch (err) {
-		console.error(`Error while sending message `, err.message);
-		next(err);
-	}
-});
-
-function getResource(selectedYear, callback) {
 	const db = require("../../services/db").dbConnection();
 	db.all(
-		`SELECT date, systemid, uuid, previous_point_marker, current_point_marker, status FROM task ORDER BY id`,
+		`SELECT * FROM ${resourceName} WHERE ORDER BY id`,
 		[],
 		function (err, rows) {
 			if (err) {
@@ -163,11 +178,10 @@ function createResource(resourceName, resourcePayload, callback) {
 			`INSERT INTO ${resourceName} (${resourceKeys}) VALUES (${resourceKeyPlaceHolders})`, resourceValues,
 			function (err) {
 				if (err) {
-					res.status(400).json({
-						error: true,
-						message: err.message,
-					});
-					return;
+					return {
+						error: false,
+						data: this.lastID,
+					};
 				}
 				res.status(200).json({
 					error: false,

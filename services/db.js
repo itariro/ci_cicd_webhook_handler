@@ -36,8 +36,28 @@ async function createDatabase() {
 	db.close();
 }
 
+async function deleteDatabase() {
+	/* purge the whole database */
+	let db = dbConnection();
+	db.run("DROP TABLE task;");
+	db.run("DROP TABLE incident;");
+	db.run("DROP TABLE user_mobile;");
+	db.run("DROP TABLE user_admin;");
+	db.run("DROP TABLE user_partner;");
+	db.run("DROP TABLE field;");
+	db.run("DROP TABLE field_insights;");
+	db.run("DROP TABLE transactions_mobile;");
+	db.run("DROP TABLE transactions_partner;");
+	db.run("DROP TABLE subscription;");
+	db.run("DROP TABLE subscriber;");
+	db.run("DROP TABLE user_type;");
+	db.run("DROP TABLE status;");
+	db.run("DROP TABLE partner_type;");
+	db.close();
+}
+
 /* ---------- TASK LOGS ---------- */
-async function updateTaskLog(actionLog) {
+async function updateTaskLog (actionLog) {
 	/* update single log entry */
 
 	let db = dbConnection();
@@ -159,5 +179,6 @@ module.exports = {
 	processPendingTasks,
 	createIncidentLog,
 	createDatabase,
+	deleteDatabase,
 	dbConnection,
 };
