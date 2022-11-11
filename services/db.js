@@ -10,28 +10,28 @@ async function createDatabase() {
 	db.run("CREATE TABLE IF NOT EXISTS incident (id INTEGER PRIMARY KEY, date TEXT, description TEXT, source TEXT, severity TEXT);");
 
 	/* users */
-	db.run("CREATE TABLE IF NOT EXISTS user_mobile (id INTEGER PRIMARY KEY, name TEXT, group TEXT, status TEXT, balance TEXT, auth_token TEXT, auth_token_expiry TEXT, date_created TEXT, date_updated TEXT);");
-	db.run("CREATE TABLE IF NOT EXISTS user_admin (id INTEGER PRIMARY KEY, name TEXT, email_address TEXT, user_type TEXT, password TEXT, status TEXT, auth_token TEXT, auth_token_expiry TEXT, date_created TEXT, date_updated TEXT);");
-	db.run("CREATE TABLE IF NOT EXISTS user_partner (id INTEGER PRIMARY KEY, name TEXT, email_address TEXT, partner_type TEXT, password TEXT, status TEXT, auth_token TEXT, auth_token_expiry TEXT, date_created TEXT, date_updated TEXT);");
+	db.run("CREATE TABLE IF NOT EXISTS user_mobile (id INTEGER PRIMARY KEY, name TEXT, group TEXT, status TEXT, balance TEXT, auth_token TEXT, auth_token_expiry TEXT, deleted INTEGER, date_created TEXT, date_updated TEXT);");
+	db.run("CREATE TABLE IF NOT EXISTS user_admin (id INTEGER PRIMARY KEY, name TEXT, email_address TEXT, user_type TEXT, password TEXT, status TEXT, auth_token TEXT, auth_token_expiry TEXT, deleted INTEGER, date_created TEXT, date_updated TEXT);");
+	db.run("CREATE TABLE IF NOT EXISTS user_partner (id INTEGER PRIMARY KEY, name TEXT, email_address TEXT, partner_type TEXT, password TEXT, status TEXT, auth_token TEXT, auth_token_expiry TEXT, deleted INTEGER, date_created TEXT, date_updated TEXT);");
 
 	/* fields */
-	db.run("CREATE TABLE IF NOT EXISTS field (id INTEGER PRIMARY KEY, farmer_id TEXT, name TEXT, size TEXT, polygon TEXT, centre TEXT, date_created TEXT, date_updated TEXT);");
+	db.run("CREATE TABLE IF NOT EXISTS field (id INTEGER PRIMARY KEY, farmer_id TEXT, name TEXT, size TEXT, polygon TEXT, centre TEXT, deleted INTEGER, date_created TEXT, date_updated TEXT);");
 	
 	/* field_insights */
-	db.run("CREATE TABLE IF NOT EXISTS field_insights (id INTEGER PRIMARY KEY, field_id TEXT, summary TEXT, insight_request_date TEXT, insight_request_payload TEXT, insight_source TEXT, insight_response TEXT, date_created TEXT, date_updated TEXT);");
+	db.run("CREATE TABLE IF NOT EXISTS field_insights (id INTEGER PRIMARY KEY, field_id TEXT, summary TEXT, insight_request_date TEXT, insight_request_payload TEXT, insight_source TEXT, insight_response TEXT, deleted INTEGER, date_created TEXT, date_updated TEXT);");
 
 	/* transactions */
-	db.run("CREATE TABLE IF NOT EXISTS transactions_mobile (id INTEGER PRIMARY KEY, mobile_user_id INTEGER, description TEXT, date TEXT, direction TEXT, amount TEXT, new_balance TEXT, date_created TEXT, date_updated TEXT);");
-	db.run("CREATE TABLE IF NOT EXISTS transactions_partner (id INTEGER PRIMARY KEY, partner_id INTEGER, description TEXT, date TEXT, direction TEXT, amount TEXT, new_balance TEXT, date_created TEXT, date_updated TEXT);");
+	db.run("CREATE TABLE IF NOT EXISTS transactions_mobile (id INTEGER PRIMARY KEY, mobile_user_id INTEGER, description TEXT, date TEXT, direction TEXT, amount TEXT, new_balance TEXT, deleted INTEGER, date_created TEXT, date_updated TEXT);");
+	db.run("CREATE TABLE IF NOT EXISTS transactions_partner (id INTEGER PRIMARY KEY, partner_id INTEGER, description TEXT, date TEXT, direction TEXT, amount TEXT, new_balance TEXT, deleted INTEGER, date_created TEXT, date_updated TEXT);");
 
 	/* subscriptions */
-	db.run("CREATE TABLE IF NOT EXISTS subscription (id INTEGER PRIMARY KEY, title TEXT, description TEXT, premium_amount TEXT, frequency TEXT, new_balance TEXT, date_created TEXT, date_updated TEXT);");
-	db.run("CREATE TABLE IF NOT EXISTS subscriber (id INTEGER PRIMARY KEY, user_type TEXT, user_id INTEGER, subscription_id INTEGER, status TEXT, date_created TEXT, date_updated TEXT);");
+	db.run("CREATE TABLE IF NOT EXISTS subscription (id INTEGER PRIMARY KEY, title TEXT, description TEXT, premium_amount TEXT, frequency TEXT, new_balance TEXT, deleted INTEGER, date_created TEXT, date_updated TEXT);");
+	db.run("CREATE TABLE IF NOT EXISTS subscriber (id INTEGER PRIMARY KEY, user_type TEXT, user_id INTEGER, subscription_id INTEGER, status TEXT, deleted INTEGER, date_created TEXT, date_updated TEXT);");
 
 	/* auxilliary */
-	db.run("CREATE TABLE IF NOT EXISTS user_type (id INTEGER PRIMARY KEY, type TEXT, description TEXT, date_created TEXT, date_updated TEXT);");
-	db.run("CREATE TABLE IF NOT EXISTS status (id INTEGER PRIMARY KEY, type TEXT, description TEXT, date_created TEXT, date_updated TEXT);");
-	db.run("CREATE TABLE IF NOT EXISTS partner_type (id INTEGER PRIMARY KEY, type TEXT, description TEXT, date_created TEXT, date_updated TEXT);");
+	db.run("CREATE TABLE IF NOT EXISTS user_type (id INTEGER PRIMARY KEY, type TEXT, description TEXT, deleted INTEGER, date_created TEXT, date_updated TEXT);");
+	db.run("CREATE TABLE IF NOT EXISTS status (id INTEGER PRIMARY KEY, type TEXT, description TEXT, deleted INTEGER, date_created TEXT, date_updated TEXT);");
+	db.run("CREATE TABLE IF NOT EXISTS partner_type (id INTEGER PRIMARY KEY, type TEXT, description TEXT, deleted INTEGER, date_created TEXT, date_updated TEXT);");
 	
 	db.close();
 }

@@ -73,7 +73,7 @@ router.post("/:systemid", async function (req, res, next) {
 function getResource (resourceName, resourcePayload) {
 	
 	// map key values with table columns
-	let resourceKeyValuePairs = ""; let resourceId = "";
+	let resourceKeyValuePairs = ""; let resourceId = ""; resourceFilter = "";
 	Object.keys(resourcePayload).forEach(([key, value]) => {
 		if (key === "id") {
 			resourceId = value;
@@ -88,7 +88,7 @@ function getResource (resourceName, resourcePayload) {
 
 	const db = require("../../services/db").dbConnection();
 	db.all(
-		`SELECT * FROM ${resourceName} WHERE ORDER BY id`,
+		`SELECT * FROM ${resourceName} WHERE deleted = 0 ${resourceFilter} ORDER BY id`,
 		[],
 		function (err, rows) {
 			if (err) {
@@ -130,7 +130,7 @@ function updateResource (resourceName, resourcePayload) {
 			`UPDATE ${resourceName} SET ${resourceKeyValuePairs}, date_updated = '${moment().format()}' WHERE id = '${resourceId}'`,
 			[],
 			function (err) {
-				if (err) {
+				if (err) { // TODO : confirm if this is correct
 					return {
 						error: true,
 						message: err.message,
@@ -200,7 +200,7 @@ function createResource(resourceName, resourcePayload, callback) {
 	}
 }
 
-function deleteResource(selectedYear, callback) {
+function deleteResource(selectedYear, callback) { // TODO : explore options to flag rows as deleted
 	const db = require("../../services/db").dbConnection();
 	db.all(
 		`SELECT date, systemid, uuid, previous_point_marker, current_point_marker, status FROM task ORDER BY id`,
