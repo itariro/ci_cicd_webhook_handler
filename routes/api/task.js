@@ -10,7 +10,6 @@ router.get("/:systemid", async function (req, res, next) {
       [],
       (err, rows) => {
         if (err) {
-          //throw err.message;
           res.status(400).json({
             error: true,
             message: err.message,
@@ -37,10 +36,10 @@ router.get("/:systemid", async function (req, res, next) {
         }
       }
     );
-  } catch (err) {
-    console.error(`Error while fetching task list`, err.message);
-    res.status(400).json({ error: true, message: err.message });
-    next(err);
+  } catch (error) {
+    console.error(`error while fetching task list`, error);
+    res.status(400).json({ error: true, message: error });
+    next(error);
   }
 });
 
@@ -76,9 +75,9 @@ router.post("/:systemid", async function (req, res, next) {
       }
     );
     db.close();
-  } catch (err) {
-    console.error(`Error while sending message `, err.message);
-    next(err);
+  } catch (error) {
+    console.error(`error while sending message `, error);
+    next(error);
   }
 });
 

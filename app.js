@@ -1,7 +1,7 @@
 const express = require("express");
 const app = express();
 const path = require("path");
-var exphbs = require("express-handlebars");
+const { engine } = require('express-handlebars');
 const logger = require("./middleware/logger");
 const db = require("./services/db");
 const moment = require("moment");
@@ -14,8 +14,9 @@ app.use(express.json()); // body parser
 app.use(express.urlencoded({ extended: false }));
 
 /* Handlebars middleware  */
-app.engine("handlebars", exphbs());
-app.set("view engine", "handlebars");
+app.engine('handlebars', engine({ extname: '.hbs', defaultLayout: "main"}));
+app.set('view engine', 'handlebars');
+app.set("views", "./views");
 
 /* Home page route  */
 app.get("/", (req, res) => {
@@ -67,6 +68,6 @@ app.listen(PORT, function () {
   /* log incident */
   global.SERVER_UP_TIME = moment().format();
 
-  /* log incident */
-  db.processPendingTasks();
+  /* process pending tasks */
+  // db.processPendingTasks();
 });

@@ -1,3 +1,11 @@
 {
-  "sqltools.connections": []
+  "sqltools.connections": [
+    {
+      "previewLimit": 50,
+      "driver": "SQLite",
+      "name": "majestic_io",
+      "database": "${workspaceFolder:ci_cicd_webhook_handler}/db/ci_cicd_webhook.db"
+    }
+  ],
+  "sqltools.useNodeRuntime": true
 }
