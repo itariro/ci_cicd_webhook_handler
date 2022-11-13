@@ -55,6 +55,8 @@ const PORT = process.env.PORT || 1015;
 app.listen(PORT, function () {
   console.log(`Server started on port ${PORT}.`);
 
+  db.getAPIConfig();
+
   /* create database if we dont' already have one */
   db.createDatabase();
 

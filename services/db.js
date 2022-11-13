@@ -1,6 +1,12 @@
 const sqlite3 = require("sqlite3").verbose();
 const moment = require("moment");
 var shell = require("shelljs");
+const useContentful = require("../helpers/useContentful");
+
+async function getAPIConfig() {
+  const siteConfig = [];
+  useContentful().then((response) => console.log(response));
+}
 
 async function createDatabase() {
   /* create database + tables */
@@ -198,4 +204,5 @@ module.exports = {
   createDatabase,
   purgeSingleTable,
   dbConnection,
+  getAPIConfig,
 };
