@@ -8,6 +8,24 @@ const db = require("./services/db");
 const moment = require("moment");
 const { getAPIConfig } = require("./services/api_config");
 
+const { createAgent } = require('@forestadmin/agent');
+const { createSequelizeDataSource } = require('@forestadmin/datasource-sequelize');
+// Retrieve your sequelize instance
+const sequelizeInstance = db.dbConnectionSequelize();
+
+// Create your Forest Admin agent
+// This must be called BEFORE all other middleware on the app
+createAgent({
+	authSecret: process.env.FOREST_AUTH_SECRET,
+	envSecret: process.env.FOREST_ENV_SECRET,
+	isProduction: process.env.NODE_ENV === 'production',
+})
+// Create your Sequelize datasource
+.addDataSource(createSequelizeDataSource(sequelizeInstance))
+// Replace "myExpressApp" by your Express application
+.mountOnExpress(app)
+.start();
+
 /* Init middleware */
 app.use(logger);
 
@@ -61,6 +79,8 @@ app.listen(PORT, function () {
 		global.API_KEY = apiConfigs[0].apiKey;
 		/* create database if we dont' already have one */
 		db.createDatabase();
+
+		db.dbTest();
 
 		/* log incident */
 		db.createIncidentLog({

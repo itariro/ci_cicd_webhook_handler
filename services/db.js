@@ -1,17 +1,87 @@
-const { Sequelize } = require('sequelize');
+const { Sequelize, DataTypes } = require('sequelize');
 const sqlite3 = require("sqlite3").verbose();
 const moment = require("moment");
 var shell = require("shelljs");
 
 async function createDatabase() {
-	/* create database + tables */
-	let db = dbConnection();
-	const resourceSchema = global.API_CONFIGS[0].resourceSchema;
-	resourceSchema.map((resource) => {
-		console.log('creating -> ', resource.table);
-		db.run(resource.schema);
+	try {
+		/* create database + tables */
+		let db = dbConnection();
+		const resourceSchema = global.API_CONFIGS[0].resourceSchema;
+		resourceSchema.map((resource) => {
+			console.log('creating -> ', resource.table);
+			db.run(`CREATE TABLE IF NOT EXISTS ${resource.table} (${resource.schema});`);  // create table
+
+			let fields = [];
+			const schemaColumns = resource.schema.split(",");
+			schemaColumns.forEach(element => {
+				fields.push(fieldEntry(element));
+			});
+
+			console.log(fields);
+			registerModel(resource.table, resource.table, fields);  // register model
+		});
+		db.close();
+	} catch (error) {
+		console.log(error);
+	}
+}
+
+function fieldEntry(item) {
+	const spacerPosition = item.trim().indexOf(" ");
+	let columnName = item.substr(0, spacerPosition + 1).trim();
+	let columnType = item.substr(spacerPosition + 1).trim();
+
+	if (columnName == "id") {
+		return {
+			[columnName]: {
+				type: DataTypes.INTEGER,
+				autoIncrement: true,
+				primaryKey: true
+			}
+		};
+	} else {
+		return {
+			[columnName]: {
+				type: setDataType(columnType),
+			}
+		};
+	}
+}
+
+function registerModel(tableName, modelName, fields) {
+	let sq = dbConnectionSequelize();
+	const model = sq.define(modelName, {
+		...fields
+	}, {
+		tableName: tableName,
+		timestamps: false,
 	});
-	db.close();
+	return model;
+}
+
+function setDataType(colType) {
+	if (colType === 'INTEGER PRIMARY KEY' || colType === 'DEFAULT 0') {
+		return DataTypes.INTEGER;
+	}
+	if (colType === 'TEXT') {
+		return DataTypes.STRING;
+	}
+	if (colType === 'DEFAULT 0.00') {
+		return DataTypes.DECIMAL;
+	}
+	if (colType === 'DEFAULT CURRENT_TIMESTAMP') {
+		return DataTypes.DATE;
+	}
+}
+
+async function dbTest() {
+	let sq = dbConnectionSequelize();
+	sq.authenticate().then(() => {
+		console.log('Connection has been established successfully.');
+	}).catch((error) => {
+		console.error('Unable to connect to the database: ', error);
+	});
 }
 
 async function purgeSingleTable(tableName, tableAction) {
@@ -133,10 +203,10 @@ function dbConnection() {
 	);
 }
 
-function dbConnectionS() {
+function dbConnectionSequelize() {
 	return new Sequelize({
 		dialect: 'sqlite',
-		storage: "./db/ci_cicd_webhook.db"
+		storage: "./db/majestic_io.db"
 	});
 }
 
@@ -155,4 +225,6 @@ module.exports = {
 	createDatabase,
 	purgeSingleTable,
 	dbConnection,
+	dbConnectionSequelize,
+	dbTest
 };
