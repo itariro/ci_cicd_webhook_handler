@@ -1,6 +1,6 @@
 const client = require('./contentful_client').client
 
-const getAPIConfig = async () => {
+async function getAPIConfig () {
 	try {
 		const entries = await client.getEntries({
 			content_type: "apiConfig",

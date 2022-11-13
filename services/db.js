@@ -2,6 +2,7 @@ const { Sequelize, DataTypes } = require('sequelize');
 const sqlite3 = require("sqlite3").verbose();
 const moment = require("moment");
 var shell = require("shelljs");
+let sequelizeInstance = dbConnectionSequelize();
 
 async function createDatabase() {
 	try {
@@ -10,21 +11,25 @@ async function createDatabase() {
 		const resourceSchema = global.API_CONFIGS[0].resourceSchema;
 		resourceSchema.map((resource) => {
 			console.log('creating -> ', resource.table);
-			db.run(`CREATE TABLE IF NOT EXISTS ${resource.table} (${resource.schema});`);  // create table
-
-			let fields = [];
+			// db.run(`CREATE TABLE IF NOT EXISTS ${resource.table} (${resource.schema});`);  // create table
 			const schemaColumns = resource.schema.split(",");
+			var fields = new Object();
 			schemaColumns.forEach(element => {
-				fields.push(fieldEntry(element));
+				fields[fieldName(element)] = fieldEntry(element);
 			});
-
-			console.log(fields);
 			registerModel(resource.table, resource.table, fields);  // register model
 		});
 		db.close();
+		await sequelizeInstance.sync({ force: true });
+		console.log("All models were synchronized successfully.");
 	} catch (error) {
 		console.log(error);
 	}
+}
+
+function fieldName(item) {
+	const spacerPosition = item.trim().indexOf(" ");
+	return item.substr(0, spacerPosition + 1).trim();
 }
 
 function fieldEntry(item) {
@@ -34,24 +39,19 @@ function fieldEntry(item) {
 
 	if (columnName == "id") {
 		return {
-			[columnName]: {
-				type: DataTypes.INTEGER,
-				autoIncrement: true,
-				primaryKey: true
-			}
+			type: DataTypes.INTEGER,
+			autoIncrement: true,
+			primaryKey: true
 		};
 	} else {
 		return {
-			[columnName]: {
-				type: setDataType(columnType),
-			}
+			type: setDataType(columnType),
 		};
 	}
 }
 
 function registerModel(tableName, modelName, fields) {
-	let sq = dbConnectionSequelize();
-	const model = sq.define(modelName, {
+	const model = sequelizeInstance.define(modelName, {
 		...fields
 	}, {
 		tableName: tableName,
@@ -76,8 +76,7 @@ function setDataType(colType) {
 }
 
 async function dbTest() {
-	let sq = dbConnectionSequelize();
-	sq.authenticate().then(() => {
+	sequelizeInstance.authenticate().then(() => {
 		console.log('Connection has been established successfully.');
 	}).catch((error) => {
 		console.error('Unable to connect to the database: ', error);
@@ -204,10 +203,11 @@ function dbConnection() {
 }
 
 function dbConnectionSequelize() {
-	return new Sequelize({
-		dialect: 'sqlite',
-		storage: "./db/majestic_io.db"
-	});
+	// return new Sequelize({
+	// 	dialect: 'sqlite',
+	// 	storage: "./db/ci_cicd_webhook.db"
+	// });
+	return new Sequelize('postgres://majestic_admin:8DVa3SBu38PLYosK87D8E@majestic-apps-db.cropenlgdxvr.us-east-1.rds.amazonaws.com:5432/majestic_db');
 }
 
 const searchInArray = (haystack, criteria, needle) => {
