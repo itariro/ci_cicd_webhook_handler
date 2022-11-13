@@ -76,14 +76,6 @@ router.post("/test/:id", async function (req, res, next) {
         break;
     }
     return;
-    const request_format = {
-      action: "",
-      resource: "",
-      payload: {},
-      callback_url: "",
-      user_id: "",
-      task_id: "",
-    };
   } catch (error) {
     console.error(`error while sending message `, error);
     next(error);
