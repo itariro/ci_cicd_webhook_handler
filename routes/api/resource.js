@@ -43,9 +43,10 @@ router.post("/test/:id", async function (req, res, next) {
 				);
 				break;
 			case "read": // read
-				getResource(
+				readResource(
 					req.body.resource,
-					req.body.payload,
+					req.body.filter,
+					req.body.children,
 					function (err, result) {
 						if (err) {
 							res.status(400).json({ error: true, message: err.message });
@@ -84,43 +85,41 @@ router.post("/test/:id", async function (req, res, next) {
 	}
 });
 
-function getResource(resourceName, resourcePayload, callback) {
+function getResource(resourceName, resourceFilter, resourceChildren, callback) {
 	// map key values with table columns
 	let resourceFilter = "";
-	Object.keys(resourcePayload).forEach((key) => {
-		resourceFilter += ` AND ${key} = '${resourcePayload[key]}'`;
+	Object.keys(resourceFilter).forEach((key) => {
+		resourceFilter += ` AND ${key} = '${resourceFilter[key]}'`;
 	});
 
-	const db = require("../../services/db").dbConnection();
+	// const db = require("../../services/db").dbConnection();
+	console.log(`SELECT * FROM ${resourceName} WHERE deleted = 0 ${resourceFilter} ORDER BY id`);
 
-	console.log(
-		`SELECT * FROM ${resourceName} WHERE deleted = 0 ${resourceFilter} ORDER BY id`
-	);
-	db.all(
-		`SELECT * FROM ${resourceName} WHERE deleted = 0 ${resourceFilter} ORDER BY id`,
-		[],
-		function (err, rows) {
-			if (err) {
-				db.close();
-				callback(null, {
-					error: true,
-					message: "no record found",
-				});
-			} else {
-				if (rows.length > 0) {
-					callback(null, {
-						error: false,
-						data: rows,
-					});
-				} else {
-					callback(null, {
-						error: true,
-						message: "no record found",
-					});
-				}
-			}
-		}
-	);
+	// db.all(
+	// 	`SELECT * FROM ${resourceName} WHERE deleted = 0 ${resourceFilter} ORDER BY id`,
+	// 	[],
+	// 	function (err, rows) {
+	// 		if (err) {
+	// 			db.close();
+	// 			callback(null, {
+	// 				error: true,
+	// 				message: "no record found",
+	// 			});
+	// 		} else {
+	// 			if (rows.length > 0) {
+	// 				callback(null, {
+	// 					error: false,
+	// 					data: rows,
+	// 				});
+	// 			} else {
+	// 				callback(null, {
+	// 					error: true,
+	// 					message: "no record found",
+	// 				});
+	// 			}
+	// 		}
+	// 	}
+	// );
 }
 
 function updateResource(resourceName, resourcePayload, callback) {
@@ -262,35 +261,49 @@ async function deleteResource(resourceName, resourcePayload, callback) {
 	}
 }
 
-function readResource(resourceName, resourcePayload, callback) {
+async function readResource(resourceName, resourceFilter, resourceChildren, callback) {
 	try {
-		// map key values with table columns
-		let resourceId = "";
-		Object.keys(resourcePayload).forEach((key) => {
-			if (key === "id") {
-				resourceId = resourcePayload[key];
-			}
-		});
+		// get table column display options
+		const resourceSchema = global.API_CONFIGS[0].resourceSchema;
+		if (resourceSchema.some(item => item.table === resourceName)) {
 
-		const db = require("../../services/db").dbConnection();
-		const moment = require("moment");
-		db.run(
-			`UPDATE ${resourceName} SET deleted = '1', date_updated = '${moment().format()}' WHERE id = '${resourceId}'`,
-			[],
-			function (err) {
-				if (err) {
-					callback(null, {
-						error: true,
-						data: err.message,
-					});
-				}
+			// map key values with table columns
+			let resourceFilter = "";
+			Object.keys(resourceFilter).forEach((key) => {
+				resourceFilter += ` AND ${key} = '${resourceFilter[key]}'`;
+			});
+
+			const [results, metadata] = await sequelizeInstance.query(`SELECT * FROM ${resourceName} WHERE deleted = 0 ${resourceFilter} ORDER BY id`);
+			if (results) {
+				// map key values with table columns
+				// TODO : fix resourceChildren & 
+				let resourceFilter = ""; let childrenResources = [];
+				Object.keys(resourceChildren).forEach(async (key) => {
+					if (resourceSchema.some(item => item.table === resourceName)) {
+						const [results, metadata] = await sequelizeInstance.query(`SELECT * FROM ${resourceChildren[key]} WHERE deleted = 0 ${resourceFilter} ORDER BY id`);
+						childrenResources.push({ [resourceChildren[key]]: results });
+					}
+				});
 				callback(null, {
 					error: false,
-					message: "record was deleted", // TODO : add method to pull and display updated record
+					data: results,
+					children: childrenResources,
+				});
+			} else {
+				callback(null, {
+					error: true,
+					data: "no data found",
 				});
 			}
-		);
-		db.close();
+			return;
+		} else {
+			console.error(`${resourceName} does not exist`);
+			callback(null, {
+				error: true,
+				message: `${resourceName} does not exist`,
+			});
+			return;
+		}
 	} catch (error) {
 		callback(null, {
 			error: true,
@@ -301,4 +314,3 @@ function readResource(resourceName, resourcePayload, callback) {
 
 module.exports = router;
 
-// { table: "", schema: "", read_filter: "" },
