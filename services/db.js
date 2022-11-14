@@ -7,7 +7,7 @@ let sequelizeInstance = dbConnectionSequelize();
 async function createDatabase() {
 	try {
 		/* create database + tables */
-		let db = dbConnection();
+		// let db = dbConnection();
 		const resourceSchema = global.API_CONFIGS[0].resourceSchema;
 		resourceSchema.map((resource) => {
 			console.log('creating -> ', resource.table);
@@ -19,7 +19,7 @@ async function createDatabase() {
 			});
 			registerModel(resource.table, resource.table, fields);  // register model
 		});
-		db.close();
+		// db.close();
 		await sequelizeInstance.sync({ force: true });
 		console.log("All models were synchronized successfully.");
 	} catch (error) {

@@ -6,42 +6,9 @@ const { engine } = require('express-handlebars');
 const logger = require("./middleware/logger");
 const db = require("./services/db");
 const moment = require("moment");
+const { listenForMessages } = require('./services/rabbitmq');
 const appConfigs = require("./services/api_config").getAPIConfig();
-
-const { createAgent } = require('@forestadmin/agent');
-const { createSequelizeDataSource } = require('@forestadmin/datasource-sequelize');
-// Retrieve your sequelize instance
 const sequelizeInstance = db.dbConnectionSequelize();
-
-appConfigs.then(function (apiConfigs) {
-	global.API_CONFIGS = apiConfigs;
-	global.API_KEY = apiConfigs[0].apiKey;
-	/* create database if we dont' already have one */
-	db.createDatabase();
-
-	/* log incident */
-	db.createIncidentLog({
-		description: "App Restart",
-		source: "System",
-		severity: "HIGH",
-	});
-}).catch(function (err) {
-	console.log(err);
-});
-
-
-// Create your Forest Admin agent
-// This must be called BEFORE all other middleware on the app
-createAgent({
-	authSecret: process.env.FOREST_AUTH_SECRET,
-	envSecret: process.env.FOREST_ENV_SECRET,
-	isProduction: process.env.NODE_ENV === 'production',
-})
-	// Create your Sequelize datasource
-	.addDataSource(createSequelizeDataSource(sequelizeInstance))
-	// Replace "myExpressApp" by your Express application
-	.mountOnExpress(app)
-	.start();
 
 /* Init middleware */
 app.use(logger);
@@ -92,9 +59,25 @@ const PORT = process.env.PORT || 1015;
 app.listen(PORT, function () {
 	console.log(`Server started on port ${PORT}.`);
 
+	appConfigs.then(function (apiConfigs) {
+		global.API_CONFIGS = apiConfigs;
+		global.API_KEY = apiConfigs[0].apiKey;
+		/* create database if we dont' already have one */
+		db.createDatabase();
+	
+		/* log incident */
+		db.createIncidentLog({
+			description: "App Restart",
+			source: "System",
+			severity: "HIGH",
+		});
+	}).catch(function (err) {
+		console.log(err);
+	});
+
 	/* log incident */
 	global.SERVER_UP_TIME = moment().format();
 
-	/* process pending tasks */
-	// db.processPendingTasks();
+	/* start listening for messages on queue */
+	listenForMessages()
 });
