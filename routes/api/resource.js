@@ -87,7 +87,7 @@ router.post("/test/:id", async function (req, res, next) {
 
 function getResource(resourceName, resourceFilter, resourceChildren, callback) {
 	// map key values with table columns
-	let resourceFilter = "";
+	let resourceFilterKeyValues = "";
 	Object.keys(resourceFilter).forEach((key) => {
 		resourceFilter += ` AND ${key} = '${resourceFilter[key]}'`;
 	});
@@ -268,12 +268,12 @@ async function readResource(resourceName, resourceFilter, resourceChildren, call
 		if (resourceSchema.some(item => item.table === resourceName)) {
 
 			// map key values with table columns
-			let resourceFilter = "";
+			let resourceFilterKeyValues = "";
 			Object.keys(resourceFilter).forEach((key) => {
-				resourceFilter += ` AND ${key} = '${resourceFilter[key]}'`;
+				resourceFilterKeyValues += ` AND ${key} = '${resourceFilterKeyValues[key]}'`;
 			});
 
-			const [results, metadata] = await sequelizeInstance.query(`SELECT * FROM ${resourceName} WHERE deleted = 0 ${resourceFilter} ORDER BY id`);
+			const [results, metadata] = await sequelizeInstance.query(`SELECT * FROM ${resourceName} WHERE deleted = 0 ${resourceFilterKeyValues} ORDER BY id`);
 			if (results) {
 				// map key values with table columns
 				// TODO : fix resourceChildren & 

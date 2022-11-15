@@ -1,3 +1,4 @@
+
 var contentful = require('contentful')
 
 const client = contentful.createClient({
