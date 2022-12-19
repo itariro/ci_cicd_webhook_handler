@@ -25,6 +25,7 @@
     "sequelize": "^6.25.5",
     "shelljs": "^0.8.5",
     "sqlite3": "^5.1.2",
+    "twilio": "^3.83.3",
     "uuid": "^9.0.0"
   },
   "devDependencies": {
