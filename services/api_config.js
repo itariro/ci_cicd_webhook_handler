@@ -3,7 +3,7 @@ const client = require('./contentful_client').client
 async function getAPIConfig () {
 	try {
 		const entries = await client.getEntries({
-			content_type: "apiConfig",
+			content_type: "kuchandoAutoApiConfig",
 			select: "fields",
 		});
 		const sanitizedEntries = entries.items.map((item) => {

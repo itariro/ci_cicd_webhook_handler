@@ -129,25 +129,24 @@ async function processPendingTasks() {
 			const system_register = require("../store/system_register");
 			rows.forEach((task) => {
 				console.log("task => ", task);
-				const system_detail = searchInArray(
-					system_register,
-					["id"],
-					task.systemid
-				);
+				// const system_detail = searchInArray(
+				// 	system_register,
+				// 	["id"],
+				// 	task.systemid
+				// );
 
-				console.log("system => ", system_detail[0].name);
 
-				if (
-					shell.exec(
-						`cd ${system_detail[0].path} && ${system_detail[0].deploy.pull}`
-					).code == 0
-				) {
-					// no errors - let's update the table
-					updateTaskLog({ status: "completed", uuid: task.uuid });
-				} else {
-					// errors - gonna have to try again
-					updateTaskLog({ status: "pending", uuid: task.uuid });
-				}
+				// if (
+				// 	shell.exec(
+				// 		`cd ${system_detail[0].path} && ${system_detail[0].deploy.pull}`
+				// 	).code == 0
+				// ) {
+				// 	// no errors - let's update the table
+				// 	updateTaskLog({ status: "completed", uuid: task.uuid });
+				// } else {
+				// 	// errors - gonna have to try again
+				// 	updateTaskLog({ status: "pending", uuid: task.uuid });
+				// }
 			});
 
 			return true;
@@ -203,10 +202,6 @@ function dbConnection() {
 }
 
 function dbConnectionSequelize() {
-	// return new Sequelize({
-	// 	dialect: 'sqlite',
-	// 	storage: "./db/ci_cicd_webhook.db"
-	// });
 	return new Sequelize('postgres://majestic_admin:8DVa3SBu38PLYosK87D8E@majestic-apps-db.cropenlgdxvr.us-east-1.rds.amazonaws.com:5432/majestic_db');
 }
 
