@@ -1,23 +1,22 @@
 const { Sequelize, DataTypes } = require('sequelize');
 const sqlite3 = require("sqlite3").verbose();
 const moment = require("moment");
-var shell = require("shelljs");
 let sequelizeInstance = dbConnectionSequelize();
+let currentModels = [];
 
 async function createDatabase() {
 	try {
 		/* create database + tables */
-		// let db = dbConnection();
 		const resourceSchema = global.API_CONFIGS[0].resourceSchema;
 		resourceSchema.map((resource) => {
 			console.log('creating -> ', resource.table);
-			// db.run(`CREATE TABLE IF NOT EXISTS ${resource.table} (${resource.schema});`);  // create table
 			const schemaColumns = resource.schema.split(",");
 			var fields = new Object();
 			schemaColumns.forEach(element => {
 				fields[fieldName(element)] = fieldEntry(element);
 			});
-			registerModel(resource.table, resource.table, fields);  // register model
+			// register model
+			currentModels.push({table: resource.table, model: registerModel(resource.table, resource.table, fields)});
 		});
 		// db.close();
 		await sequelizeInstance.sync({ force: true });
@@ -202,7 +201,7 @@ function dbConnection() {
 }
 
 function dbConnectionSequelize() {
-	return new Sequelize('postgres://majestic_admin:8DVa3SBu38PLYosK87D8E@majestic-apps-db.cropenlgdxvr.us-east-1.rds.amazonaws.com:5432/majestic_db');
+	return new Sequelize('postgres://majestic_admin:8DVa3SBu38PLYosK87D8E@majestic-apps-db.cropenlgdxvr.us-east-1.rds.amazonaws.com:5432/kuchando_auto');
 }
 
 const searchInArray = (haystack, criteria, needle) => {
@@ -221,5 +220,6 @@ module.exports = {
 	purgeSingleTable,
 	dbConnection,
 	dbConnectionSequelize,
-	dbTest
+	dbTest,
+	currentModels
 };

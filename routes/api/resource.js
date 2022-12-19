@@ -86,45 +86,6 @@ router.post("/test/:id", async function (req, res, next) {
   }
 });
 
-function getResource(resourceName, resourceFilter, resourceChildren, callback) {
-  // map key values with table columns
-  let resourceFilterKeyValues = "";
-  Object.keys(resourceFilter).forEach((key) => {
-    resourceFilter += ` AND ${key} = '${resourceFilter[key]}'`;
-  });
-
-  // const db = require("../../services/db").dbConnection();
-  console.log(
-    `SELECT * FROM ${resourceName} WHERE deleted = 0 ${resourceFilter} ORDER BY id`
-  );
-
-  // db.all(
-  // 	`SELECT * FROM ${resourceName} WHERE deleted = 0 ${resourceFilter} ORDER BY id`,
-  // 	[],
-  // 	function (err, rows) {
-  // 		if (err) {
-  // 			db.close();
-  // 			callback(null, {
-  // 				error: true,
-  // 				message: "no record found",
-  // 			});
-  // 		} else {
-  // 			if (rows.length > 0) {
-  // 				callback(null, {
-  // 					error: false,
-  // 					data: rows,
-  // 				});
-  // 			} else {
-  // 				callback(null, {
-  // 					error: true,
-  // 					message: "no record found",
-  // 				});
-  // 			}
-  // 		}
-  // 	}
-  // );
-}
-
 async function updateResource(resourceName, resourcePayload, callback) {
   try {
     // map key values with table columns
@@ -165,7 +126,7 @@ async function updateResource(resourceName, resourcePayload, callback) {
   }
 }
 
-function createResource(resourceName, resourcePayload, callback) {
+async function createResource(resourceName, resourcePayload, callback) {
   try {
     // map key values with table columns
     let resourceKeys = "";
@@ -184,7 +145,7 @@ function createResource(resourceName, resourcePayload, callback) {
     console.log(
       `INSERT INTO ${resourceName} (${resourceKeys}) VALUES (${resourceKeyPlaceHolders})`
     );
-    sequelizeInstance
+    await sequelizeInstance
       .query(
         `INSERT INTO ${resourceName} (${resourceKeys}) VALUES (${resourceKeyPlaceHolders})`,
         {

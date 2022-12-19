@@ -57,27 +57,30 @@ app.use((err, req, res, next) => {
 /* Set port and listen */
 const PORT = process.env.PORT || 1015;
 app.listen(PORT, function () {
-	console.log(`Server started on port ${PORT}.`);
+	try {
+		console.log(`Server started on port ${PORT}.`);
+		appConfigs.then(function (apiConfigs) {
+			global.API_CONFIGS = apiConfigs;
+			global.API_KEY = apiConfigs[0].apiKey;
+			/* create database if we dont' already have one */
+			db.createDatabase();
 
-	appConfigs.then(function (apiConfigs) {
-		global.API_CONFIGS = apiConfigs;
-		global.API_KEY = apiConfigs[0].apiKey;
-		/* create database if we dont' already have one */
-		db.createDatabase();
-	
-		/* log incident */
-		db.createIncidentLog({
-			description: "App Restart",
-			source: "System",
-			severity: "HIGH",
+			/* log incident */
+			db.createIncidentLog({
+				description: "App Restart",
+				source: "System",
+				severity: "HIGH",
+			});
+		}).catch(function (err) {
+			console.log(err);
 		});
-	}).catch(function (err) {
-		console.log(err);
-	});
 
-	/* log incident */
-	global.SERVER_UP_TIME = moment().format();
+		/* log incident */
+		global.SERVER_UP_TIME = moment().format();
 
-	/* start listening for messages on queue */
-	listenForMessages()
+		/* start listening for messages on queue */
+		listenForMessages();
+	} catch (error) {
+		console.log("Could not start server due to : ", error);
+	}
 });
