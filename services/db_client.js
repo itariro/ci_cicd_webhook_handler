@@ -1,9 +1,10 @@
 const { dbConnectionSequelize } = require("../../services/db");
 let sequelizeInstance = dbConnectionSequelize();
 const { QueryTypes } = require("sequelize");
+const { currentModels } = require('./db');
 
 /* ENTRY POINT */
-function tableAction(actionPackage) {
+function tableActionGeneric(actionPackage) {
 	switch (actionPackage.action) {
 		case "create": // create
 			createResource(
@@ -260,6 +261,56 @@ async function readResource(
 	}
 }
 
+async function createResourceGeneric(resourceName, resourceFilter, resourceChildren, callback) {
+	try {
+		let tableModel = currentModels.find((tableProperties) => tableProperties.table_name === resourceName);
+		if (tableModel != null) {
+			// Create a new user
+			// const jane = await tableProperty.model_name.create({ firstName: "Jane", lastName: "Doe" });
+			const newRecord = await tableModel.model_name.create(resourceChildren);
+			console.log("new record auto-generated ID:", newRecord.id);
+			callback(null, {
+				error: false,
+				data: newRecord,
+			});
+		} else {
+			callback(null, {
+				error: true,
+				message: "resource does not exist",
+			});
+		}
+	} catch (error) {
+		callback(null, {
+			error: true,
+			message: error,
+		});
+	}
+}
+async function readResourceGeneric(resourceName, resourceFilter, resourceChildren, callback) {
+	try {
+		let tableModel = currentModels.find((tableProperties) => tableProperties.table_name === resourceName);
+		if (tableModel != null) {
+			const singleRecord = await tableModel.findOne({ where: { title: 'My Title' } });
+			if (singleRecord === null) {
+				console.log('Not found!');
+			} else {
+				console.log(singleRecord instanceof Project); // true
+				console.log(singleRecord.title); // 'My Title'
+			}
+		} else {
+			callback(null, {
+				error: true,
+				message: "resource does not exist",
+			});
+		}
+	} catch (error) {
+		callback(null, {
+			error: true,
+			message: error,
+		});
+	}
+}
+
 module.exports = {
-	tableAction
+	tableAction: tableActionGeneric
 };

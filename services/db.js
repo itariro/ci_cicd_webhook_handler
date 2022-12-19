@@ -16,7 +16,7 @@ async function createDatabase() {
 				fields[fieldName(element)] = fieldEntry(element);
 			});
 			// register model
-			currentModels.push({table: resource.table, model: registerModel(resource.table, resource.table, fields)});
+			currentModels.push({ table_name: resource.table, model_name: registerModel(resource.table, resource.table, fields) });
 		});
 		// db.close();
 		await sequelizeInstance.sync({ force: true });
@@ -160,30 +160,38 @@ async function processPendingTasks() {
 /* ---------- INCIDENT LOGS ---------- */
 async function createIncidentLog(incidentLog) {
 	/* create new single log entry */
-
-	let db = dbConnection();
-	db.run(
-		`INSERT INTO incident (date, description, source, severity) VALUES(?,?,?,?)`,
-		[
-			moment().format(),
-			incidentLog.description,
-			incidentLog.source,
-			incidentLog.severity,
-		],
-		function (err) {
-			if (err) {
+	try {
+		let tableModel = currentModels.find((tableProperties) => tableProperties.table_name === "incident");
+		if (tableModel != null) {
+			const newRecord = await tableModel.create({
+				date: moment().format(),
+				description: incidentLog.description,
+				source: incidentLog.source,
+				severity: incidentLog.severity
+			});
+			if (newRecord) {
+				return {
+					error: false,
+					data: newRecord
+				};
+			} else {
 				return {
 					error: true,
-					message: err.message,
+					message: "resource does not exist"
 				};
 			}
+		} else {
 			return {
-				error: false,
-				data: this.lastID,
+				error: true,
+				message: "resource does not exist"
 			};
 		}
-	);
-	db.close();
+	} catch (error) {
+		return {
+			error: true,
+			message: err.message
+		};
+	}
 }
 
 /* ---------- AUXILIARY FUNCTIONS ---------- */

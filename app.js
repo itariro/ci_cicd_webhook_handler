@@ -25,9 +25,9 @@ app.set("views", "./views");
 /* Home page route  */
 app.get("/", (req, res) => {
 	res.render("index", {
-		title: "Majestic Task Worker",
+		title: "Kuchando Auto Task Worker",
 		description:
-			"Majestic Task Worker node for distributed systems",
+			"Kuchando Auto Task Worker node for distributed systems",
 		version: "v0.1.0",
 		uptime: global.SERVER_UP_TIME,
 	});

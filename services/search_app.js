@@ -18,28 +18,44 @@ const { tableAction } = require("./db_client");
 async function updateTaskLog(actionLog) {
 	/* update single log entry */
 	// tableAction({action:"update", resource:"", payload:})
-	let db = dbConnection();
-	db.run(
-		`UPDATE task SET result = '${JSON.stringify(
-			actionLog.result
-		)}', status = '${actionLog.status
-		}', attempts = attempts + 1 WHERE uuid = '${actionLog.uuid}'`,
-		[],
-		function (err) {
-			if (err) {
+	try {
+		let tableModel = currentModels.find((tableProperties) => tableProperties.table_name === "task");
+		if (tableModel != null) {
+			const updatedRecord = await tableModel.update({
+				result: JSON.stringify(
+					actionLog.result
+				), status: actionLog.status
+			}, {
+				where: {
+					uuid: actionLog.uuid
+				}
+			});
+			if (updatedRecord) {
+				await tableModel.increment({attempts: 1}, { where: { uuid: actionLog.uuid } });
+				return {
+					error: false,
+					data: updatedRecord
+				};
+			} else {
 				return {
 					error: true,
-					message: err.message,
+					message: "resource does not exist"
 				};
 			}
+		} else {
 			return {
-				error: false,
-				data: this.lastID,
+				error: true,
+				message: "resource does not exist"
 			};
 		}
-	);
-	db.close();
+	} catch (error) {
+		return {
+			error: true,
+			message: err.message
+		};
+	}
 }
+
 async function createBroadcastLog(broadcastPackage) {
 	/* create new single log entry */
 
