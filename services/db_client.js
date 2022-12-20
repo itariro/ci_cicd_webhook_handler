@@ -1,4 +1,4 @@
-const { dbConnectionSequelize } = require("../../services/db");
+const { dbConnectionSequelize } = require("./db");
 let sequelizeInstance = dbConnectionSequelize();
 const { QueryTypes } = require("sequelize");
 const { currentModels } = require('./db');
@@ -12,13 +12,9 @@ function tableActionGeneric(actionPackage) {
 				actionPackage.payload,
 				function (err, result) {
 					if (err) {
-						res.status(400).json({ error: true, message: err.message });
-						return;
+						return { error: true, message: err.message };
 					} else {
-						result.error
-							? res.status(400).json(result)
-							: res.status(200).json(result);
-						return;
+						return result;
 					}
 				}
 			);
@@ -261,12 +257,10 @@ async function readResource(
 	}
 }
 
-async function createResourceGeneric(resourceName, resourceFilter, resourceChildren, callback) {
+async function createResourceGeneric(resourceName, resourceChildren, callback) {
 	try {
 		let tableModel = currentModels.find((tableProperties) => tableProperties.table_name === resourceName);
 		if (tableModel != null) {
-			// Create a new user
-			// const jane = await tableProperty.model_name.create({ firstName: "Jane", lastName: "Doe" });
 			const newRecord = await tableModel.model_name.create(resourceChildren);
 			console.log("new record auto-generated ID:", newRecord.id);
 			callback(null, {
@@ -312,5 +306,6 @@ async function readResourceGeneric(resourceName, resourceFilter, resourceChildre
 }
 
 module.exports = {
-	tableAction: tableActionGeneric
+	tableActionGeneric,
+	createResourceGeneric
 };

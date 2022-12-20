@@ -1,5 +1,10 @@
 const express = require("express");
+const {
+  tableActionGeneric,
+  createResourceGeneric,
+} = require("../../services/db_client");
 const router = express.Router();
+const moment = require("moment");
 
 /* LIST all tasks */
 router.get("/:systemid", async function (req, res, next) {
@@ -46,35 +51,28 @@ router.get("/:systemid", async function (req, res, next) {
 /* POST NEW task */
 router.post("/:systemid", async function (req, res, next) {
   try {
-    const db = require("../../services/db").dbConnection();
-    const moment = require("moment");
-    db.run(
-      `INSERT INTO task (date, systemid, uuid, previous_point_marker, current_point_marker, status, attempts) VALUES(?,?,?,?,?,?,?)`,
-      [
-        moment().format(),
-        req.params.systemid,
-        req.params.systemid + "." + req.body.after,
-        req.body.before,
-        req.body.after,
-        "pending",
-        0,
-      ],
-      function (err) {
+    createResourceGeneric(
+      "task",
+      {
+        systemid: req.params.systemid,
+        uuid: "uuid-000-000-001",
+        user_mobile: req.body.user,
+        query: req.body.query,
+        created_on: moment().format(),
+        updated_on: moment().format(),
+      },
+      function (err, result) {
         if (err) {
-          res.status(400).json({
-            error: true,
-            message: err.message,
-          });
+          res.status(400).json({ error: true, message: err.message });
+          return;
+        } else {
+          result.error
+            ? res.status(400).json(result)
+            : res.status(200).json(result);
           return;
         }
-        res.status(200).json({
-          error: false,
-          data: this.lastID,
-        });
-        return;
       }
     );
-    db.close();
   } catch (error) {
     console.error(`error while sending message `, error);
     next(error);
