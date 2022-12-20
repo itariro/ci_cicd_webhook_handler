@@ -1,12 +1,12 @@
-require('dotenv').config();
+require("dotenv").config();
 const express = require("express");
 const app = express();
 const path = require("path");
-const { engine } = require('express-handlebars');
+const { engine } = require("express-handlebars");
 const logger = require("./middleware/logger");
 const db = require("./services/db");
 const moment = require("moment");
-const { listenForMessages } = require('./services/rabbitmq');
+const { listenForMessages } = require("./services/rabbitmq");
 const appConfigs = require("./services/api_config").getAPIConfig();
 const sequelizeInstance = db.dbConnectionSequelize();
 
@@ -18,19 +18,18 @@ app.use(express.json()); // body parser
 app.use(express.urlencoded({ extended: false }));
 
 /* Handlebars middleware  */
-app.engine('handlebars', engine({ extname: '.hbs', defaultLayout: "main" }));
-app.set('view engine', 'handlebars');
+app.engine("handlebars", engine({ extname: ".hbs", defaultLayout: "main" }));
+app.set("view engine", "handlebars");
 app.set("views", "./views");
 
 /* Home page route  */
 app.get("/", (req, res) => {
-	res.render("index", {
-		title: "Kuchando Auto Task Worker",
-		description:
-			"Kuchando Auto Task Worker node for distributed systems",
-		version: "v0.1.0",
-		uptime: global.SERVER_UP_TIME,
-	});
+  res.render("index", {
+    title: "Kuchando Auto Task Worker",
+    description: "Kuchando Auto Task Worker node for distributed systems",
+    version: "v0.1.0",
+    uptime: global.SERVER_UP_TIME,
+  });
 });
 
 /* set static directory */
@@ -48,39 +47,55 @@ app.use("/api/v1/data", require("./routes/api/data"));
 
 /* Error handler middleware */
 app.use((err, req, res, next) => {
-	const statusCode = err.statusCode || 500;
-	console.error(err.message, err.stack);
-	res.status(statusCode).json({ message: err.message });
-	return;
+  const statusCode = err.statusCode || 500;
+  console.error(err.message, err.stack);
+  res.status(statusCode).json({ message: err.message });
+  return;
 });
 
 /* Set port and listen */
 const PORT = process.env.PORT || 1015;
 app.listen(PORT, function () {
-	try {
-		console.log(`Server started on port ${PORT}.`);
-		appConfigs.then(function (apiConfigs) {
-			global.API_CONFIGS = apiConfigs;
-			global.API_KEY = apiConfigs[0].apiKey;
-			/* create database if we dont' already have one */
-			db.createDatabase();
+  try {
+    console.log(`Server started on port ${PORT}.`);
+    appConfigs
+      .then(function (apiConfigs) {
+        global.API_CONFIGS = apiConfigs;
+        global.API_KEY = apiConfigs[0].apiKey;
+        /* create database if we dont' already have one */
+        db.createDatabase();
 
-			/* log incident */
-			db.createIncidentLog({
-				description: "App Restart",
-				source: "System",
-				severity: "HIGH",
-			});
-		}).catch(function (err) {
-			console.log(err);
-		});
+        /* log incident */
+        db.createIncidentLog({
+          description: "App Restart",
+          source: "System",
+          severity: "HIGH",
+        });
+      })
+      .catch(function (err) {
+        console.log(err);
+      });
 
-		/* log incident */
-		global.SERVER_UP_TIME = moment().format();
+    /* log incident */
+    global.SERVER_UP_TIME = moment().format();
 
-		/* start listening for messages on queue */
-		listenForMessages();
-	} catch (error) {
-		console.log("Could not start server due to : ", error);
-	}
+    /* start listening for messages on queue */
+    listenForMessages();
+
+	/* start cron job for all tasks in queue */
+    var CronJob = require("cron").CronJob;
+    var job = new CronJob(
+      "* * * * * *",
+      function () {
+        console.log("You will see this message every second");
+      },
+      null,
+      true,
+      "America/Los_Angeles"
+    );
+    // Use this if the 4th param is default value(false)
+    // job.start()
+  } catch (error) {
+    console.log("Could not start server due to : ", error);
+  }
 });
