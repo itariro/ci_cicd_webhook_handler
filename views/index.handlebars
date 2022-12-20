@@ -112,7 +112,7 @@
     currentYearData = []; currentYear = selectedYear; selectedMonthToProcess('Jan');
     $.ajax({
       type: "get", url:
-        "http://localhost:1015/api/incident/stats/" + selectedYear, datatype: "json", success: function
+        "http://localhost:3003/api/incident/stats/" + selectedYear, datatype: "json", success: function
           (resp) {
           if (!resp.error) {
 

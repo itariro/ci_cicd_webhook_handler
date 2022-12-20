@@ -2,31 +2,49 @@ const {currentModels} = require('./db');
 const { Op } = require("sequelize");
 
 async function processPendingBroadcastTasks() {
-	let sql = `SELECT uuid, user, payload FROM task_result_cast WHERE status = 'pending' AND attempts < 3 ORDER BY id`;
-	let db = dbConnection();
-	db.all(sql, [], (err, rows) => {
-		if (err) {
-			throw err.message;
-			return false;
-		}
-
-		if (rows.length > 0) {
-			rows.forEach(async (task) => {
-				console.log("task => ", task);
-				sendInteractiveMessage(task.uuid, task.user, JSON.parse(task.payload));
+	try {
+		let tableModel = currentModels.find((tableProperties) => tableProperties.table_name === "result_cast");
+		if (tableModel != null) {
+			const pendingTasks = tableModel.findAll({
+				where: {
+				  [Op.and]: [
+					{ attempts: [0,1,2]},
+					{ status: 0 }
+				  ]
+				}
 			});
-			return true;
+			// process the outstanding TASKS HERE
+			console.log("pendingTasks -> ", pendingTasks);
+		} else {
+			console.log("resource does not exist");
 		}
-	});
+	} catch (error) {
+		console.log(error);
+	}
 
-	console.log("done -> test()");
-	db.close();
-	setTimeout(processPendingTasks, 300000); // 10 second intervals
+	// let sql = `SELECT uuid, user, payload FROM task_result_cast WHERE status = 'pending' AND attempts < 3 ORDER BY id`;
+	// let db = dbConnection();
+	// db.all(sql, [], (err, rows) => {
+	// 	if (err) {
+	// 		throw err.message;
+	// 		return false;
+	// 	}
+
+	// 	if (rows.length > 0) {
+	// 		rows.forEach(async (task) => {
+	// 			console.log("task => ", task);
+	// 			sendInteractiveMessage(task.uuid, task.user, JSON.parse(task.payload));
+	// 		});
+	// 		return true;
+	// 	}
+	// });
+
+	// console.log("done -> test()");
+	// db.close();
+	// setTimeout(processPendingTasks, 300000); // 10 second intervals
 }
 
 async function processPendingTasks() {
-	
-
 	try {
 		let tableModel = currentModels.find((tableProperties) => tableProperties.table_name === "task");
 		if (tableModel != null) {
@@ -37,63 +55,15 @@ async function processPendingTasks() {
 					{ status: 0 }
 				  ]
 				}
-			  });
-			
-			
-			
-			
-			const newRecord = await tableModel.model_name.create(resourceChildren);
-			console.log("new record auto-generated ID:", newRecord.id);
-			callback(null, {
-				error: false,
-				data: newRecord,
 			});
+			// process the outstanding TASKS HERE
+			console.log("pendingTasks -> ", pendingTasks);
 		} else {
-			callback(null, {
-				error: true,
-				message: "resource does not exist",
-			});
+			console.log("resource does not exist");
 		}
 	} catch (error) {
-		callback(null, {
-			error: true,
-			message: error,
-		});
+		console.log(error);
 	}
-
-
-	
-	
-	
-	
-	
-	
-	
-	let sql = `SELECT date, systemid, uuid, query, user, status FROM task WHERE status = 'pending' AND attempts < 3 ORDER BY id`;
-	let db = dbConnection();
-	db.all(sql, [], (err, rows) => {
-		if (err) {
-			throw err.message;
-			return false;
-		}
-
-		if (rows.length > 0) {
-			rows.forEach(async (task) => {
-				console.log("task => ", task);
-				await scrapOnBeforward(task);
-				// errors - gonna have to try again
-				//   updateTaskLog({ status: "pending", uuid: task.uuid });
-				//      errors - not gonna to try again
-				//   updateTaskLog({ status: "cancelled", uuid: task.uuid });
-				// }
-			});
-			return true;
-		}
-	});
-
-	console.log("done -> test()");
-	db.close();
-	setTimeout(processPendingTasks, 5000); // 10 second intervals
 }
 
 /* ---------- INCIDENT LOGS ---------- */
@@ -135,8 +105,6 @@ const searchInArray = (haystack, criteria, needle) => {
 		);
 	});
 };
-
-async function 
 
 module.exports = {
 	processPendingBroadcastTasks,

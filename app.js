@@ -7,6 +7,7 @@ const logger = require("./middleware/logger");
 const db = require("./services/db");
 const moment = require("moment");
 const { listenForMessages } = require("./services/rabbitmq");
+const { processPendingTasks } = require("./services/task_manager");
 const appConfigs = require("./services/api_config").getAPIConfig();
 const sequelizeInstance = db.dbConnectionSequelize();
 
@@ -54,7 +55,7 @@ app.use((err, req, res, next) => {
 });
 
 /* Set port and listen */
-const PORT = process.env.PORT || 1015;
+const PORT = process.env.PORT || 3003;
 app.listen(PORT, function () {
   try {
     console.log(`Server started on port ${PORT}.`);
@@ -82,19 +83,6 @@ app.listen(PORT, function () {
     /* start listening for messages on queue */
     listenForMessages();
 
-	/* start cron job for all tasks in queue */
-    var CronJob = require("cron").CronJob;
-    var job = new CronJob(
-      "* * * * * *",
-      function () {
-        console.log("You will see this message every second");
-      },
-      null,
-      true,
-      "America/Los_Angeles"
-    );
-    // Use this if the 4th param is default value(false)
-    // job.start()
   } catch (error) {
     console.log("Could not start server due to : ", error);
   }

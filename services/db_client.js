@@ -280,16 +280,90 @@ async function createResourceGeneric(resourceName, resourceChildren, callback) {
 		});
 	}
 }
-async function readResourceGeneric(resourceName, resourceFilter, resourceChildren, callback) {
+async function readSingleResourceGeneric(resourceName, resourceFilter, callback) {
 	try {
 		let tableModel = currentModels.find((tableProperties) => tableProperties.table_name === resourceName);
 		if (tableModel != null) {
-			const singleRecord = await tableModel.findOne({ where: { title: 'My Title' } });
+			const singleRecord = await tableModel.findOne({ where: resourceFilter });
 			if (singleRecord === null) {
 				console.log('Not found!');
+				callback(null, {
+					error: true,
+					message: "record not found",
+				});
 			} else {
-				console.log(singleRecord instanceof Project); // true
-				console.log(singleRecord.title); // 'My Title'
+				console.log(singleRecord instanceof tableModel); // true
+				console.log("found -> ", singleRecord); // 'My Title'
+				callback(null, {
+					error: false,
+					data: singleRecord,
+				});
+			}
+		} else {
+			callback(null, {
+				error: true,
+				message: "resource does not exist",
+			});
+		}
+	} catch (error) {
+		callback(null, {
+			error: true,
+			message: error,
+		});
+	}
+}
+
+async function readMultipleAllResourceGeneric(resourceName, callback) {
+	try {
+		let tableModel = currentModels.find((tableProperties) => tableProperties.table_name === resourceName);
+		if (tableModel != null) {
+			const multipleRecords = await tableModel.findAll();
+			if (multipleRecords === null) {
+				console.log('Not found!');
+				callback(null, {
+					error: true,
+					message: "records not found",
+				});
+			} else {
+				console.log(multipleRecords instanceof tableModel); // true
+				console.log("found -> ", multipleRecords); // 'My Title'
+				callback(null, {
+					error: false,
+					data: multipleRecords,
+				});
+			}
+		} else {
+			callback(null, {
+				error: true,
+				message: "resource does not exist",
+			});
+		}
+	} catch (error) {
+		callback(null, {
+			error: true,
+			message: error,
+		});
+	}
+}
+
+async function readMultipleResourceGeneric(resourceName, resourceFilter, callback) {
+	try {
+		let tableModel = currentModels.find((tableProperties) => tableProperties.table_name === resourceName);
+		if (tableModel != null) {
+			const multipleRecords = await tableModel.findAll({ where: resourceFilter });
+			if (multipleRecords === null) {
+				console.log('Not found!');
+				callback(null, {
+					error: true,
+					message: "records not found",
+				});
+			} else {
+				console.log(multipleRecords instanceof tableModel); // true
+				console.log("found -> ", multipleRecords); // 'My Title'
+				callback(null, {
+					error: false,
+					data: multipleRecords,
+				});
 			}
 		} else {
 			callback(null, {
@@ -307,5 +381,7 @@ async function readResourceGeneric(resourceName, resourceFilter, resourceChildre
 
 module.exports = {
 	tableActionGeneric,
-	createResourceGeneric
+	createResourceGeneric,
+	readMultipleAllResourceGeneric,
+	readMultipleResourceGeneric
 };
