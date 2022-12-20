@@ -1,4 +1,4 @@
-const {currentModels} = require('./db');
+const { currentModels } = require('./db');
 const { Op } = require("sequelize");
 
 async function processPendingBroadcastTasks() {
@@ -7,10 +7,10 @@ async function processPendingBroadcastTasks() {
 		if (tableModel != null) {
 			const pendingTasks = tableModel.findAll({
 				where: {
-				  [Op.and]: [
-					{ attempts: [0,1,2]},
-					{ status: 0 }
-				  ]
+					[Op.and]: [
+						{ attempts: [0, 1, 2] },
+						{ status: 0 }
+					]
 				}
 			});
 			// process the outstanding TASKS HERE
@@ -46,24 +46,76 @@ async function processPendingBroadcastTasks() {
 
 async function processPendingTasks() {
 	try {
+		return await getAllPendingTasks();
+		
+		// let tableModel = currentModels.find((tableProperties) => tableProperties.table_name === "task");
+		// if (tableModel != null) {
+		// 	const pendingTasks = tableModel.findAll({
+		// 		where: {
+		// 			[Op.and]: [
+		// 				{ attempts: [0, 1, 2] },
+		// 				{ status: 0 }
+		// 			]
+		// 		}
+		// 	});
+		// 	// process the outstanding TASKS HERE
+		// 	console.log("pendingTasks -> ", pendingTasks);
+		// } else {
+		// 	console.log("resource does not exist");
+		// }
+	} catch (error) {
+		console.log(error);
+	}
+}
+
+async function getAllPendingTasks() {
+	try {
 		let tableModel = currentModels.find((tableProperties) => tableProperties.table_name === "task");
 		if (tableModel != null) {
 			const pendingTasks = tableModel.findAll({
 				where: {
-				  [Op.and]: [
-					{ attempts: [0,1,2]},
-					{ status: 0 }
-				  ]
+					[Op.and]: [
+						{ attempts: [0, 1, 2] },
+						{ status: 0 }
+					]
 				}
 			});
 			// process the outstanding TASKS HERE
 			console.log("pendingTasks -> ", pendingTasks);
+			return {
+				error: false,
+				data: pendingTasks,
+			};
 		} else {
 			console.log("resource does not exist");
+			return {
+				error: true,
+				message: "resource does not exist",
+			};
 		}
 	} catch (error) {
 		console.log(error);
+		return {
+			error: true,
+			message: error,
+		};
 	}
+}
+
+async function loadContent() {
+	const posts = await getBlogPosts();
+
+	// instead of awaiting this call, create an array of Promises
+	const promises = posts.map((post) => {
+		return getBlogComments(post.id).then((comments) => {
+			return { ...post, comments };
+		});
+	});
+
+	// use await on Promise.all so the Promises execute in parallel
+	const postsWithComments = await Promise.all(promises);
+
+	console.log(postsWithComments);
 }
 
 /* ---------- INCIDENT LOGS ---------- */

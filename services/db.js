@@ -29,17 +29,17 @@ async function createDatabase() {
 		var job = new CronJob(
 			"* * * * * *",
 			function () {
-				console.log("You will see this message every second");
-				processPendingTasks
+				console.log("You will see this message every 10 seconds");
+				console.log("pending tasks -> ", processPendingTasks());
 			},
 			null,
-			true,
+			false,
 			"America/Los_Angeles"
 		);
 		// Use this if the 4th param is default value(false)
-		// job.start()
 		console.log("All models were synchronized successfully.");
 		console.log("models -> ", currentModels);
+		job.start()
 	} catch (error) {
 		console.log(error);
 	}
