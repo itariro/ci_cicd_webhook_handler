@@ -1,11 +1,12 @@
-const { currentModels } = require('./db');
+const db = require("./db");
 const { Op } = require("sequelize");
+let currentQueue = [];
 
 async function processPendingBroadcastTasks() {
 	try {
-		let tableModel = currentModels.find((tableProperties) => tableProperties.table_name === "result_cast");
+		let tableModel = global.CURRENT_MODELS.find((tableProperties) => tableProperties.table_name === "result_cast");
 		if (tableModel != null) {
-			const pendingTasks = tableModel.findAll({
+			const pendingTasks = await tableModel.model_name.findAll({
 				where: {
 					[Op.and]: [
 						{ attempts: [0, 1, 2] },
@@ -46,11 +47,16 @@ async function processPendingBroadcastTasks() {
 
 async function processPendingTasks() {
 	try {
-		return await getAllPendingTasks();
+		const pendingTasks = await getAllPendingTasks();
+		if (!pendingTasks.error){
+			console.log('pending -> ', pendingTasks.data);
+
+
+		}
 		
-		// let tableModel = currentModels.find((tableProperties) => tableProperties.table_name === "task");
+		// let tableModel = global.CURRENT_MODELS.find((tableProperties) => tableProperties.table_name === "task");
 		// if (tableModel != null) {
-		// 	const pendingTasks = tableModel.findAll({
+		// 	const pendingTasks = await tableModel.model_name.findAll({
 		// 		where: {
 		// 			[Op.and]: [
 		// 				{ attempts: [0, 1, 2] },
@@ -70,9 +76,9 @@ async function processPendingTasks() {
 
 async function getAllPendingTasks() {
 	try {
-		let tableModel = currentModels.find((tableProperties) => tableProperties.table_name === "task");
+		let tableModel = global.CURRENT_MODELS.find((tableProperties) => tableProperties.table_name === "task");
 		if (tableModel != null) {
-			const pendingTasks = tableModel.findAll({
+			const pendingTasks = await tableModel.model_name.findAll({
 				where: {
 					[Op.and]: [
 						{ attempts: [0, 1, 2] },
@@ -81,7 +87,6 @@ async function getAllPendingTasks() {
 				}
 			});
 			// process the outstanding TASKS HERE
-			console.log("pendingTasks -> ", pendingTasks);
 			return {
 				error: false,
 				data: pendingTasks,

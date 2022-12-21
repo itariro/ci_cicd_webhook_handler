@@ -259,7 +259,7 @@ async function readResource(
 
 async function createResourceGeneric(resourceName, resourceChildren, callback) {
 	try {
-		let tableModel = currentModels.find((tableProperties) => tableProperties.table_name === resourceName);
+		let tableModel = global.CURRENT_MODELS.find((tableProperties) => tableProperties.table_name === resourceName);
 		if (tableModel != null) {
 			const newRecord = await tableModel.model_name.create(resourceChildren);
 			console.log("new record auto-generated ID:", newRecord.id);
@@ -282,9 +282,9 @@ async function createResourceGeneric(resourceName, resourceChildren, callback) {
 }
 async function readSingleResourceGeneric(resourceName, resourceFilter, callback) {
 	try {
-		let tableModel = currentModels.find((tableProperties) => tableProperties.table_name === resourceName);
+		let tableModel = global.CURRENT_MODELS.find((tableProperties) => tableProperties.table_name === resourceName);
 		if (tableModel != null) {
-			const singleRecord = await tableModel.findOne({ where: resourceFilter });
+			const singleRecord = await tableModel.model_name.findOne({ where: resourceFilter });
 			if (singleRecord === null) {
 				console.log('Not found!');
 				callback(null, {
@@ -315,9 +315,9 @@ async function readSingleResourceGeneric(resourceName, resourceFilter, callback)
 
 async function readMultipleAllResourceGeneric(resourceName, callback) {
 	try {
-		let tableModel = currentModels.find((tableProperties) => tableProperties.table_name === resourceName);
+		let tableModel = global.CURRENT_MODELS.find((tableProperties) => tableProperties.table_name === resourceName);
 		if (tableModel != null) {
-			const multipleRecords = await tableModel.findAll();
+			const multipleRecords = await tableModel.model_name.findAll();
 			if (multipleRecords === null) {
 				console.log('Not found!');
 				callback(null, {
@@ -348,9 +348,9 @@ async function readMultipleAllResourceGeneric(resourceName, callback) {
 
 async function readMultipleResourceGeneric(resourceName, resourceFilter, callback) {
 	try {
-		let tableModel = currentModels.find((tableProperties) => tableProperties.table_name === resourceName);
+		let tableModel = global.CURRENT_MODELS.find((tableProperties) => tableProperties.table_name === resourceName);
 		if (tableModel != null) {
-			const multipleRecords = await tableModel.findAll({ where: resourceFilter });
+			const multipleRecords = await tableModel.model_name.findAll({ where: resourceFilter });
 			if (multipleRecords === null) {
 				console.log('Not found!');
 				callback(null, {

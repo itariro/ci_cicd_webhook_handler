@@ -3,7 +3,7 @@ const sqlite3 = require("sqlite3").verbose();
 const moment = require("moment");
 const { processPendingTasks } = require("./task_manager");
 let sequelizeInstance = dbConnectionSequelize();
-let currentModels = [];
+global.CURRENT_MODELS = [];
 
 async function createDatabase() {
 	try {
@@ -17,31 +17,20 @@ async function createDatabase() {
 				fields[fieldName(element)] = fieldEntry(element);
 			});
 			// register model
-			currentModels.push({
+			global.CURRENT_MODELS.push({
 				table_name: resource.table,
 				model_name: registerModel(resource.table, resource.table, fields),
 			});
 		});
 		// db.close();
 		await sequelizeInstance.sync({ force: true });
-		/* start cron job for all tasks in task queue */
-		var CronJob = require("cron").CronJob;
-		var job = new CronJob(
-			"* * * * * *",
-			function () {
-				console.log("You will see this message every 10 seconds");
-				console.log("pending tasks -> ", processPendingTasks());
-			},
-			null,
-			false,
-			"America/Los_Angeles"
-		);
-		// Use this if the 4th param is default value(false)
 		console.log("All models were synchronized successfully.");
-		console.log("models -> ", currentModels);
-		job.start()
+		console.log("models -> ", global.CURRENT_MODELS);
+
+		return {error: false, message: "all models were synchronized successfully."};
 	} catch (error) {
 		console.log(error);
+		return {error: true, message: error};
 	}
 }
 
@@ -153,11 +142,11 @@ async function updateTaskLog(actionLog) {
 async function createIncidentLog(incidentLog) {
 	/* create new single log entry */
 	try {
-		let tableModel = currentModels.find(
+		let tableModel = global.CURRENT_MODELS.find(
 			(tableProperties) => tableProperties.table_name === "incident"
 		);
 		if (tableModel != null) {
-			const newRecord = await tableModel.create({
+			const newRecord = await tableModel.model_name.create({
 				date: moment().format(),
 				description: incidentLog.description,
 				source: incidentLog.source,
@@ -225,5 +214,4 @@ module.exports = {
 	dbConnection,
 	dbConnectionSequelize,
 	dbTest,
-	currentModels,
 };

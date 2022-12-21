@@ -19,9 +19,9 @@ async function updateTaskLog(actionLog) {
 	/* update single log entry */
 	// tableAction({action:"update", resource:"", payload:})
 	try {
-		let tableModel = currentModels.find((tableProperties) => tableProperties.table_name === "task");
+		let tableModel = global.CURRENT_MODELS.find((tableProperties) => tableProperties.table_name === "task");
 		if (tableModel != null) {
-			const updatedRecord = await tableModel.update({
+			const updatedRecord = await tableModel.model_name.update({
 				result: JSON.stringify(
 					actionLog.result
 				), status: actionLog.status
@@ -31,7 +31,7 @@ async function updateTaskLog(actionLog) {
 				}
 			});
 			if (updatedRecord) {
-				await tableModel.increment({attempts: 1}, { where: { uuid: actionLog.uuid } });
+				await tableModel.model_name.increment({attempts: 1}, { where: { uuid: actionLog.uuid } });
 				return {
 					error: false,
 					data: updatedRecord

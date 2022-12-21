@@ -60,11 +60,27 @@ app.listen(PORT, function () {
   try {
     console.log(`Server started on port ${PORT}.`);
     appConfigs
-      .then(function (apiConfigs) {
+      .then(async function (apiConfigs) {
         global.API_CONFIGS = apiConfigs;
         global.API_KEY = apiConfigs[0].apiKey;
         /* create database if we dont' already have one */
-        db.createDatabase();
+        const dbCreateResult = await db.createDatabase();
+        if (!dbCreateResult.error) {
+          /* start cron job for all tasks in task queue */
+          var CronJob = require("cron").CronJob;
+          var job = new CronJob(
+            "* * * * * *",
+            function () {
+              console.log("You will see this message every 10 seconds");
+			  processPendingTasks();
+            },
+            null,
+            true,
+            "America/Los_Angeles"
+          );
+          // Use this if the 4th param is default value(false)
+          // job.start();
+        }
 
         /* log incident */
         db.createIncidentLog({
@@ -82,7 +98,6 @@ app.listen(PORT, function () {
 
     /* start listening for messages on queue */
     listenForMessages();
-
   } catch (error) {
     console.log("Could not start server due to : ", error);
   }
