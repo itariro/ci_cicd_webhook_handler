@@ -23,9 +23,9 @@ async function createDatabase() {
 			});
 		});
 		// db.close();
-		await sequelizeInstance.sync({ force: true });
+		await sequelizeInstance.sync({ force: true, logging:false });
 		console.log("All models were synchronized successfully.");
-		console.log("models -> ", global.CURRENT_MODELS);
+		// console.log("models -> ", global.CURRENT_MODELS);
 
 		return {error: false, message: "all models were synchronized successfully."};
 	} catch (error) {

@@ -1,7 +1,6 @@
 const { dbConnectionSequelize } = require("./db");
-let sequelizeInstance = dbConnectionSequelize();
+let sequelizeInstance = dbConnectionSequelize;
 const { QueryTypes } = require("sequelize");
-const { currentModels } = require('./db');
 
 /* ENTRY POINT */
 function tableActionGeneric(actionPackage) {
@@ -280,6 +279,7 @@ async function createResourceGeneric(resourceName, resourceChildren, callback) {
 		});
 	}
 }
+
 async function readSingleResourceGeneric(resourceName, resourceFilter, callback) {
 	try {
 		let tableModel = global.CURRENT_MODELS.find((tableProperties) => tableProperties.table_name === resourceName);
@@ -325,7 +325,6 @@ async function readMultipleAllResourceGeneric(resourceName, callback) {
 					message: "records not found",
 				});
 			} else {
-				console.log(multipleRecords instanceof tableModel); // true
 				console.log("found -> ", multipleRecords); // 'My Title'
 				callback(null, {
 					error: false,

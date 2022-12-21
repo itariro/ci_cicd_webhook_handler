@@ -30,7 +30,7 @@ async function updateTaskLog(actionLog) {
 				}
 			});
 			if (updatedRecord) {
-				await tableModel.model_name.increment({attempts: 1}, { where: { uuid: actionLog.uuid } });
+				await tableModel.model_name.increment({ attempts: 1 }, { where: { uuid: actionLog.uuid } });
 				return {
 					error: false,
 					data: updatedRecord
@@ -109,162 +109,171 @@ async function updateBroadcastLog(actionLog) {
 
 async function scrapOnBeforward(task) {
 	let partNumber = task.query.replace(/\s/g, "");
-	if (partNumber.length > 3) {
-		try {
-			const tabletojson = require("tabletojson").Tabletojson;
-			tabletojson
-				.convertUrl(
-					`https://autoparts.beforward.jp/search?search=${partNumber.toUpperCase()}`
-				)
-				.then(async (tablesAsJson) => {
-					if (tablesAsJson[0] == undefined) {
-						console.log("there were no results...");
-						await updateTaskLog({
-							status: 1,
-							uuid: task.uuid,
-							result: {
-								error: true,
-								message: "part not found/invalid OEM part number",
-							},
-						});
+	const attempts = task.attempts + 1;
+	return new Promise(async function (resolve, reject) {
+		if (partNumber.length > 3) {
+			try {
+				const tabletojson = require("tabletojson").Tabletojson;
+				tabletojson
+					.convertUrl(
+						`https://autoparts.beforward.jp/search?search=${partNumber.toUpperCase()}`
+					)
+					.then(async (tablesAsJson) => {
+						if (tablesAsJson[0] == undefined) {
+							console.log("there were no results...");
+							await sendPlainTextMessage(
+								task.user_mobile,
+								"part not found/invalid OEM part number"
+							);
+							resolve({
+								status: 1,
+								uuid: task.uuid,
+								attempts: task.attempts + 1,
+								result: JSON.stringify({
+									error: true,
+									message: "part not found/invalid OEM part number",
+								})
+							});
+						} else {
+							let results = tablesAsJson[0];
+							console.log("there were results...");
+							results.forEach((element) => {
+								Object.keys(element).forEach((key) => {
+									if (
+										key === "9" ||
+										key === "10" ||
+										key === "11" ||
+										key === "Local Place"
+									) {
+										delete element[key];
+									}
+									if (key === "Price" || key === "Ref NoGenuine No") {
+										let priceComponent = JSON.stringify(element[key]);
+										const displayPrice =
+											priceComponent.search(/n/) > 0
+												? priceComponent.substring(
+													1,
+													priceComponent.search(/n/) - 1
+												)
+												: priceComponent;
+										// console.log(displayPrice);
+										delete element[key]; // drop this key
+										element[key] = displayPrice; // replace with this one
+									}
+								});
+							});
+
+							Object.keys(results).forEach((key) => {
+								const row = results[key];
+								Object.keys(row).forEach((row_key) => {
+									var replacedKey = row_key
+										.trim()
+										.replace(/\s/g, "_")
+										.toLowerCase();
+									if (row_key !== replacedKey) {
+										// id
+										if (replacedKey == "ref_nogenuine_no") {
+											let newSKU =
+												task.user_mobile + "-" + row[row_key].replace("-", "");
+											newSKU = newSKU.replace('"', "");
+											row["sku"] = newSKU;
+										}
+
+										// price
+										if (replacedKey == "price") {
+											row["clean_price"] = parseFloat(
+												row[row_key].replace("$", "")
+											);
+										}
+
+										// name
+										if (replacedKey == "name") {
+											row["condition"] = "Used";
+											row["thumbnail"] = "Used";
+										}
+										row[replacedKey] =
+											replacedKey == "name"
+												? row[row_key].replace("Used", "")
+												: row[row_key];
+
+										delete row[row_key];
+									}
+								});
+							});
+
+							//console.log('results -> ', results);
+
+							try {
+								// compile products to add to WooCommerce
+								const objForWooCommerce = results.map(
+									createProductsForWooCommerceList
+								);
+								let productsForAdditionToWooCommerce = resultListForWooCommerce;
+								productsForAdditionToWooCommerce.create = objForWooCommerce;
+
+								//console.log('objForWooCommerce -> ', objForWooCommerce);
+
+								// add products to WooCommerce
+								await addProductToWooCommerce(
+									productsForAdditionToWooCommerce,
+									task
+								);
+								resolve({
+									status: 1,
+									uuid: task.uuid,
+									attempts: task.attempts + 1,
+									result: JSON.stringify({ error: false, message: "products sent to user" }),
+								});
+							} catch (error) {
+								console.log(error.message);
+								await sendPlainTextMessage(
+									task.user_mobile,
+									"internal error, please again"
+								);
+								resolve({
+									status: 1,
+									uuid: task.uuid,
+									attempts: task.attempts + 1,
+									result: JSON.stringify({ error: true, message: error.message }),
+								});
+							}
+						}
+					})
+					.catch(async (error) => {
+						// interpret error and maybe display something on the UI
+						console.log(error);
 						await sendPlainTextMessage(
-							task.user,
+							task.user_mobile,
 							"part not found/invalid OEM part number"
 						);
-					} else {
-						let results = tablesAsJson[0];
-						console.log("there were results...");
-						results.forEach((element) => {
-							Object.keys(element).forEach((key) => {
-								if (
-									key === "9" ||
-									key === "10" ||
-									key === "11" ||
-									key === "Local Place"
-								) {
-									delete element[key];
-								}
-								if (key === "Price" || key === "Ref NoGenuine No") {
-									let priceComponent = JSON.stringify(element[key]);
-									const displayPrice =
-										priceComponent.search(/n/) > 0
-											? priceComponent.substring(
-												1,
-												priceComponent.search(/n/) - 1
-											)
-											: priceComponent;
-									// console.log(displayPrice);
-									delete element[key]; // drop this key
-									element[key] = displayPrice; // replace with this one
-								}
-							});
+						resolve({
+							status: 1,
+							uuid: task.uuid,
+							attempts: task.attempts + 1,
+							result: JSON.stringify({ error: true, message: "Invalid OEM part number" }),
 						});
-
-						Object.keys(results).forEach((key) => {
-							const row = results[key];
-							Object.keys(row).forEach((row_key) => {
-								var replacedKey = row_key
-									.trim()
-									.replace(/\s/g, "_")
-									.toLowerCase();
-								if (row_key !== replacedKey) {
-									// id
-									if (replacedKey == "ref_nogenuine_no") {
-										let newSKU =
-											task.user + "-" + row[row_key].replace("-", "");
-										newSKU = newSKU.replace('"', "");
-										row["sku"] = newSKU;
-									}
-
-									// price
-									if (replacedKey == "price") {
-										row["clean_price"] = parseFloat(
-											row[row_key].replace("$", "")
-										);
-									}
-
-									// name
-									if (replacedKey == "name") {
-										row["condition"] = "Used";
-										row["thumbnail"] = "Used";
-									}
-									row[replacedKey] =
-										replacedKey == "name"
-											? row[row_key].replace("Used", "")
-											: row[row_key];
-
-									delete row[row_key];
-								}
-							});
-						});
-
-						// console.log('results -> ', results);
-
-						try {
-							// compile products to add to WooCommerce
-							const objForWooCommerce = results.map(
-								createProductsForWooCommerceList
-							);
-							let productsForAdditionToWooCommerce = resultListForWooCommerce;
-							productsForAdditionToWooCommerce.create = objForWooCommerce;
-
-							// console.log('objForWooCommerce -> ', objForWooCommerce);
-
-							// add products to WooCommerce
-							await addProductToWooCommerce(
-								productsForAdditionToWooCommerce,
-								task
-							);
-							await updateTaskLog({
-								status: 1,
-								uuid: task.uuid,
-								result: { error: false, message: "products sent to user" },
-							});
-						} catch (error) {
-							await updateTaskLog({
-								status: 1,
-								uuid: task.uuid,
-								result: { error: true, message: error.message },
-							});
-							console.log(error.message);
-							await sendPlainTextMessage(
-								task.user,
-								"internal error, please again"
-							);
-						}
-					}
-				})
-				.catch(async (error) => {
-					// interpret error and maybe display something on the UI
-					console.log(error);
-					await updateTaskLog({
-						status: 1,
-						uuid: task.uuid,
-						result: { error: true, message: "Invalid OEM part number" },
 					});
-					await sendPlainTextMessage(
-						task.user,
-						"part not found/invalid OEM part number"
-					);
+			} catch (error) {
+				resolve({
+					status: 1,
+					uuid: task.uuid,
+					attempts: task.attempts + 1,
+					result: JSON.stringify({ error: true, message: error.message }),
 				});
-		} catch (error) {
-			await updateTaskLog({
+			}
+		} else {
+			await sendPlainTextMessage(
+				task.user_mobile,
+				"part not found/invalid OEM part number"
+			);
+			resolve({
 				status: 1,
 				uuid: task.uuid,
-				result: { error: true, message: error.message },
+				attempts: task.attempts + 1,
+				result: JSON.stringify({ error: true, message: "invalid OEM part number" }),
 			});
 		}
-	} else {
-		await updateTaskLog({
-			status: 1,
-			uuid: task.uuid,
-			result: { error: true, message: "invalid OEM part number" },
-		});
-		await sendPlainTextMessage(
-			task.user,
-			"part not found/invalid OEM part number"
-		);
-	}
+	});
 }
 
 async function addProductToWooCommerce(objProduct, task) {
@@ -297,12 +306,12 @@ async function addProductToWooCommerce(objProduct, task) {
 
 					// save results to broadcast scheduler
 					createBroadcastLog({
-						user: task.user,
+						user: task.user_mobile,
 						payload: modifiedArr,
 						uuid: task.uuid,
 					});
 					await sendPlainTextMessage(
-						task.user,
+						task.user_mobile,
 						"We found this item in our partner/supplier stock. We are now negotiating for the best price, give us 5 minutes to get back to you. Meanwhile, Is there anything else we can help with? "
 					);
 				} catch (error) {
@@ -316,13 +325,14 @@ async function addProductToWooCommerce(objProduct, task) {
 			console.log("Response Headers:", error.response.headers);
 			console.log("Response Data:", error.response.data);
 			await sendPlainTextMessage(
-				task.user,
+				task.user_mobile,
 				"internal error, please try again later"
 			);
 			return error.response;
 		})
 		.finally(() => {
 			// Always executed.
+			console.log(error);
 		});
 }
 
@@ -352,16 +362,16 @@ async function sendInteractiveMessage(uuid, userNumber, messageToSend) {
 }
 
 async function sendPlainTextMessage(userNumber, messageToSend) {
-	let plainTextMessage = plainText;
-	plainTextMessage.to = userNumber;
-	plainTextMessage.text.body = messageToSend;
-	await sendWhatsAppMessage(plainTextMessage)
-		.then(function (response) {
-			console.log(response);
-		})
-		.catch(function (error) {
-			console.log(error);
-		});
+	// let plainTextMessage = plainText;
+	// plainTextMessage.to = userNumber;
+	// plainTextMessage.text.body = messageToSend;
+	// await sendWhatsAppMessage(plainTextMessage)
+	// 	.then(function (response) {
+	// 		console.log(response);
+	// 	})
+	// 	.catch(function (error) {
+	// 		console.log(error);
+	// 	});
 }
 
 module.exports = {

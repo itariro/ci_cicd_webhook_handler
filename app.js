@@ -7,7 +7,7 @@ const logger = require("./middleware/logger");
 const db = require("./services/db");
 const moment = require("moment");
 const { listenForMessages } = require("./services/rabbitmq");
-const { processPendingTasks } = require("./services/task_manager");
+const { processPendingTasks, manageQueuedTasks } = require("./services/task_manager");
 const appConfigs = require("./services/api_config").getAPIConfig();
 const sequelizeInstance = db.dbConnectionSequelize();
 
@@ -68,18 +68,31 @@ app.listen(PORT, function () {
         if (!dbCreateResult.error) {
           /* start cron job for all tasks in task queue */
           var CronJob = require("cron").CronJob;
-          var job = new CronJob(
+          global.PENDING_TASKS_CRON_JOB = new CronJob(
             "* * * * * *",
             function () {
-              console.log("You will see this message every 10 seconds");
+              // console.log("pending tasks");
 			  processPendingTasks();
+			},
+            null,
+            false,
+            "Europe/London"
+          );
+		  
+		  global.QUEUED_TASKS_CRON_JOB = new CronJob(
+            "* * * * * *",
+            function () {
+              console.log("queued tasks");
+			  manageQueuedTasks();
             },
             null,
-            true,
-            "America/Los_Angeles"
+            false,
+            "Europe/London"
           );
           // Use this if the 4th param is default value(false)
           // job.start();
+		  global.PENDING_TASKS_CRON_JOB.start();
+		  global.QUEUED_TASKS_CRON_JOB.stop();
         }
 
         /* log incident */
