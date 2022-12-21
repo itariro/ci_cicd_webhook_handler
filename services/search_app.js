@@ -1,4 +1,3 @@
-const sqlite3 = require("sqlite3").verbose();
 const moment = require("moment");
 const config = require("../utils/config");
 
@@ -120,8 +119,8 @@ async function scrapOnBeforward(task) {
 				.then(async (tablesAsJson) => {
 					if (tablesAsJson[0] == undefined) {
 						console.log("there were no results...");
-						updateTaskLog({
-							status: "completed",
+						await updateTaskLog({
+							status: 1,
 							uuid: task.uuid,
 							result: {
 								error: true,
@@ -216,14 +215,14 @@ async function scrapOnBeforward(task) {
 								productsForAdditionToWooCommerce,
 								task
 							);
-							updateTaskLog({
-								status: "completed",
+							await updateTaskLog({
+								status: 1,
 								uuid: task.uuid,
 								result: { error: false, message: "products sent to user" },
 							});
 						} catch (error) {
-							updateTaskLog({
-								status: "completed",
+							await updateTaskLog({
+								status: 1,
 								uuid: task.uuid,
 								result: { error: true, message: error.message },
 							});
@@ -238,8 +237,8 @@ async function scrapOnBeforward(task) {
 				.catch(async (error) => {
 					// interpret error and maybe display something on the UI
 					console.log(error);
-					updateTaskLog({
-						status: "completed",
+					await updateTaskLog({
+						status: 1,
 						uuid: task.uuid,
 						result: { error: true, message: "Invalid OEM part number" },
 					});
@@ -249,15 +248,15 @@ async function scrapOnBeforward(task) {
 					);
 				});
 		} catch (error) {
-			updateTaskLog({
-				status: "completed",
+			await updateTaskLog({
+				status: 1,
 				uuid: task.uuid,
 				result: { error: true, message: error.message },
 			});
 		}
 	} else {
-		updateTaskLog({
-			status: "completed",
+		await updateTaskLog({
+			status: 1,
 			uuid: task.uuid,
 			result: { error: true, message: "invalid OEM part number" },
 		});
@@ -339,7 +338,7 @@ async function sendInteractiveMessage(uuid, userNumber, messageToSend) {
 		.then(function (response) {
 			console.log(response);
 			updateBroadcastLog({
-				status: "completed",
+				status: 1,
 				uuid: task.uuid
 			});
 		})
