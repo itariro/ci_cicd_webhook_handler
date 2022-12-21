@@ -7,7 +7,7 @@ const logger = require("./middleware/logger");
 const db = require("./services/db");
 const moment = require("moment");
 const { listenForMessages } = require("./services/rabbitmq");
-const { processPendingTasks, manageQueuedTasks } = require("./services/task_manager");
+const { processPendingTasks, manageQueuedTasks, processPendingBroadcastTasks } = require("./services/task_manager");
 const appConfigs = require("./services/api_config").getAPIConfig();
 const sequelizeInstance = db.dbConnectionSequelize();
 
@@ -83,7 +83,7 @@ app.listen(PORT, function () {
             "* * * * * *",
             function () {
               console.log("queued tasks");
-			  manageQueuedTasks();
+			  processPendingBroadcastTasks();
             },
             null,
             false,

@@ -1,7 +1,8 @@
 const db = require("./db");
 const { Op } = require("sequelize");
 const { scrapOnBeforward } = require("./search_app");
-let currentQueue = [];
+const { sendWhatsAppMessage } = require("../utils/message_helper");
+const { interactiveList } = require("../utils/message_formats");
 
 async function processPendingBroadcastTasks() {
 	try {
@@ -71,25 +72,6 @@ async function processPendingTasks() {
 	}
 }
 
-const manageQueuedTasks = async () => {
-	await Promise.allSettled(
-		currentQueue.map(async (task, index) => {
-			try {
-				// search on BF
-				await scrapOnBeforward(task)
-				console.error("currentQueue -> ", currentQueue);
-
-				// remove from list
-				currentQueue = currentQueue.slice(0, indexForRemoval).concat(currentQueue.slice(index + 1));
-				console.error("currentQueue -> ", currentQueue);
-
-			} catch (err) {
-				console.error(`I'm down, this time. ${err}`);
-			}
-		})
-	);
-};
-
 async function getAllPendingTasks() {
 	try {
 		let tableModel = global.CURRENT_MODELS.find(
@@ -149,22 +131,6 @@ async function getAllTasks() {
 			message: error,
 		};
 	}
-}
-
-async function loadContent() {
-	const posts = await getBlogPosts();
-
-	// instead of awaiting this call, create an array of Promises
-	const promises = posts.map((post) => {
-		return getBlogComments(post.id).then((comments) => {
-			return { ...post, comments };
-		});
-	});
-
-	// use await on Promise.all so the Promises execute in parallel
-	const postsWithComments = await Promise.all(promises);
-
-	console.log(postsWithComments);
 }
 
 /* ---------- INCIDENT LOGS ---------- */
@@ -247,10 +213,47 @@ async function updateTaskLog(actionLog) {
 	}
 }
 
+async function sendInteractiveMessage(uuid, userNumber, messageToSend) {
+	let productsList = interactiveList;
+	productsList.to = userNumber;
+	productsList.interactive.action.sections[0].product_items = messageToSend;
+	if (messageToSend.length > 5) {
+		productsList.interactive.action.sections[0].product_items.length = 5; // max is 10
+	}
+
+	await sendWhatsAppMessage(productsList)
+		.then(function (response) {
+			console.log(response);
+			updateBroadcastLog({
+				status: 1,
+				uuid: task.uuid
+			});
+		})
+		.catch(function (error) {
+			console.log(error);
+			updateBroadcastLog({
+				status: "pending",
+				uuid: task.uuid
+			});
+		});
+}
+
+async function sendPlainTextMessage(userNumber, messageToSend) {
+	let plainTextMessage = plainText;
+	plainTextMessage.to = userNumber;
+	plainTextMessage.text.body = messageToSend;
+	await sendWhatsAppMessage(plainTextMessage)
+		.then(function (response) {
+			console.log(response);
+		})
+		.catch(function (error) {
+			console.log(error);
+		});
+}
+
 module.exports = {
 	processPendingBroadcastTasks,
 	processPendingTasks,
 	createIncidentLog,
-	manageQueuedTasks,
 	getAllTasks
 };

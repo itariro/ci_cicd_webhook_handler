@@ -1,17 +1,11 @@
 const moment = require("moment");
-const config = require("../utils/config");
-
 const {
-	interactiveList,
-	resultListForWooCommerce,
-	plainText,
+	resultListForWooCommerce
 } = require("../utils/message_formats");
 const {
 	createProductsList,
-	createProductsForWooCommerceList,
-	sendWhatsAppMessage,
+	createProductsForWooCommerceList
 } = require("../utils/message_helper");
-const { tableAction } = require("./db_client");
 
 /* ---------- TASK LOGS ---------- */
 async function updateTaskLog(actionLog) {
@@ -308,44 +302,6 @@ async function addProductToWooCommerce(objProduct, task) {
 				resolve(resultObj);
 			});
 	});
-}
-
-async function sendInteractiveMessage(uuid, userNumber, messageToSend) {
-	let productsList = interactiveList;
-	productsList.to = userNumber;
-	productsList.interactive.action.sections[0].product_items = messageToSend;
-	if (messageToSend.length > 5) {
-		productsList.interactive.action.sections[0].product_items.length = 5; // max is 10
-	}
-
-	await sendWhatsAppMessage(productsList)
-		.then(function (response) {
-			console.log(response);
-			updateBroadcastLog({
-				status: 1,
-				uuid: task.uuid
-			});
-		})
-		.catch(function (error) {
-			console.log(error);
-			updateBroadcastLog({
-				status: "pending",
-				uuid: task.uuid
-			});
-		});
-}
-
-async function sendPlainTextMessage(userNumber, messageToSend) {
-	// let plainTextMessage = plainText;
-	// plainTextMessage.to = userNumber;
-	// plainTextMessage.text.body = messageToSend;
-	// await sendWhatsAppMessage(plainTextMessage)
-	// 	.then(function (response) {
-	// 		console.log(response);
-	// 	})
-	// 	.catch(function (error) {
-	// 		console.log(error);
-	// 	});
 }
 
 module.exports = {
