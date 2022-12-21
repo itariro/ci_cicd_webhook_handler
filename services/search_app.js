@@ -121,10 +121,6 @@ async function scrapOnBeforward(task) {
 					.then(async (tablesAsJson) => {
 						if (tablesAsJson[0] == undefined) {
 							console.log("there were no results...");
-							await sendPlainTextMessage(
-								task.user_mobile,
-								"part not found/invalid OEM part number"
-							);
 							resolve({
 								status: 1,
 								uuid: task.uuid,
@@ -202,7 +198,6 @@ async function scrapOnBeforward(task) {
 							});
 
 							//console.log('results -> ', results);
-
 							try {
 								// compile products to add to WooCommerce
 								const objForWooCommerce = results.map(
@@ -212,24 +207,20 @@ async function scrapOnBeforward(task) {
 								productsForAdditionToWooCommerce.create = objForWooCommerce;
 
 								//console.log('objForWooCommerce -> ', objForWooCommerce);
-
-								// add products to WooCommerce
 								await addProductToWooCommerce(
 									productsForAdditionToWooCommerce,
 									task
-								);
-								resolve({
-									status: 1,
-									uuid: task.uuid,
-									attempts: task.attempts + 1,
-									result: JSON.stringify({ error: false, message: "products sent to user" }),
+								).then(function (response) {
+									console.log("woo => ", response);
+									resolve({
+										status: 1,
+										uuid: task.uuid,
+										attempts: task.attempts + 1,
+										result: JSON.stringify(response),
+									});
 								});
 							} catch (error) {
 								console.log(error.message);
-								await sendPlainTextMessage(
-									task.user_mobile,
-									"internal error, please again"
-								);
 								resolve({
 									status: 1,
 									uuid: task.uuid,
@@ -242,15 +233,11 @@ async function scrapOnBeforward(task) {
 					.catch(async (error) => {
 						// interpret error and maybe display something on the UI
 						console.log(error);
-						await sendPlainTextMessage(
-							task.user_mobile,
-							"part not found/invalid OEM part number"
-						);
 						resolve({
 							status: 1,
 							uuid: task.uuid,
 							attempts: task.attempts + 1,
-							result: JSON.stringify({ error: true, message: "Invalid OEM part number" }),
+							result: JSON.stringify({ error: true, message: "part not found/invalid OEM part number" }),
 						});
 					});
 			} catch (error) {
@@ -262,10 +249,6 @@ async function scrapOnBeforward(task) {
 				});
 			}
 		} else {
-			await sendPlainTextMessage(
-				task.user_mobile,
-				"part not found/invalid OEM part number"
-			);
 			resolve({
 				status: 1,
 				uuid: task.uuid,
@@ -285,55 +268,46 @@ async function addProductToWooCommerce(objProduct, task) {
 		consumerSecret: "cs_cacb5dd089b7c84981162190b55615f6cd20f543",
 		version: "wc/v3",
 	});
+	let resultObj = { error: true, message: "this is a generic message", data: [] };
 
-	// Create a product see more in https://woocommerce.github.io/woocommerce-rest-api-docs/#product-properties
-	api
-		.post("products/batch", objProduct)
-		.then(async (response) => {
-			// Successful request
-			console.log("Response Status:", response.status);
-			//console.log("Response Headers:", response.headers);
-			//console.log("Response Data:", response.data);
+	return new Promise(async function (resolve, reject) {
+		// Create a product see more in https://woocommerce.github.io/woocommerce-rest-api-docs/#product-properties
+		api
+			.post("products/batch", objProduct)
+			.then(async (response) => {
+				// Successful request
+				console.log("Response Status:", response.status);
+				if (response.data.create) {
+					try {
+						let modifiedArr = [];
+						response.data.create.map(function (product) {
+							if (product.id > 0) {
+								modifiedArr.push(createProductsList(product));
+							}
+						});
 
-			if (response.data.create) {
-				try {
-					let modifiedArr = [];
-					response.data.create.map(function (product) {
-						if (product.id > 0) {
-							modifiedArr.push(createProductsList(product));
-						}
-					});
-
-					// save results to broadcast scheduler
-					createBroadcastLog({
-						user: task.user_mobile,
-						payload: modifiedArr,
-						uuid: task.uuid,
-					});
-					await sendPlainTextMessage(
-						task.user_mobile,
-						"We found this item in our partner/supplier stock. We are now negotiating for the best price, give us 5 minutes to get back to you. Meanwhile, Is there anything else we can help with? "
-					);
-				} catch (error) {
-					console.log(error);
+						resultObj.error = false;
+						resultObj.data = modifiedArr;
+						resolve(resultObj);
+					} catch (error) {
+						resultObj.error = true;
+						resultObj.message = error;
+						resolve(resultObj);
+						console.log(error);
+					}
 				}
-			}
-		})
-		.catch(async (error) => {
-			// Invalid request, for 4xx and 5xx statuses
-			console.log("Response Status:", error.response.status);
-			console.log("Response Headers:", error.response.headers);
-			console.log("Response Data:", error.response.data);
-			await sendPlainTextMessage(
-				task.user_mobile,
-				"internal error, please try again later"
-			);
-			return error.response;
-		})
-		.finally(() => {
-			// Always executed.
-			console.log(error);
-		});
+			})
+			.catch(async (error) => {
+				// Invalid request, for 4xx and 5xx statuses
+				await sendPlainTextMessage(
+					task.user_mobile,
+					"internal error, please try again later"
+				);
+				resultObj.error = true;
+				resultObj.message = error.response;
+				resolve(resultObj);
+			});
+	});
 }
 
 async function sendInteractiveMessage(uuid, userNumber, messageToSend) {
