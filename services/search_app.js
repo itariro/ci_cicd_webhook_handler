@@ -32,7 +32,7 @@ async function scrapOnBeforward(task) {
 							});
 						} else {
 							let results = tablesAsJson[0];
-							console.log("there were results...");
+							console.log(" [*] there were results...");
 							results.forEach((element) => {
 								Object.keys(element).forEach((key) => {
 									if (
@@ -108,13 +108,13 @@ async function scrapOnBeforward(task) {
 									productsForAdditionToWooCommerce,
 									task
 								).then(function (response) {
-									console.log("woo => ", response);
+									// console.log("woo => ", response);
 									resolve({
 										status: 1,
 										uuid: task.uuid,
 										in_queue: 0,
 										attempts: task.attempts + 1,
-										result: JSON.stringify(response),
+										result: response,
 									});
 								});
 							} catch (error) {
@@ -170,7 +170,7 @@ async function addProductToWooCommerce(objProduct, task) {
 		consumerSecret: "cs_cacb5dd089b7c84981162190b55615f6cd20f543",
 		version: "wc/v3",
 	});
-	let resultObj = { error: true, message: "this is a generic message", data_short: [], data_full: [] };
+	let resultObj = { error: true, message: "this is a generic message", data: [] };
 
 	return new Promise(async function (resolve, reject) {
 		// Create a product see more in https://woocommerce.github.io/woocommerce-rest-api-docs/#product-properties
@@ -189,8 +189,8 @@ async function addProductToWooCommerce(objProduct, task) {
 						});
 
 						resultObj.error = false;
-						resultObj.data_short = modifiedArr; // for sending to user
-						resultObj.data_full = response.data.create; // for cataloging
+						resultObj.data = modifiedArr; // for sending to user
+						// resultObj.data_full = response.data.create; // for cataloging - this is unnecessary, this already exists in WooCommerce
 						resolve(resultObj);
 					} catch (error) {
 						resultObj.error = true;

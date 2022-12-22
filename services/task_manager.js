@@ -17,7 +17,6 @@ async function processPendingTasks() {
 				lockUnlockTask({uuid: task.uuid, lock:1});
 				return await scrapOnBeforward(task).then(async function (response) {
 					// console.log(`${task.uuid} -> `, response);
-					await updateTaskLog(response);
 					return response;
 				});
 			});
@@ -25,6 +24,10 @@ async function processPendingTasks() {
 			const searchTasks = await Promise.all(promises);
 			if (searchTasks.length > 0) {
 				console.log(searchTasks);
+				searchTasks.map(async (task) => {
+					const updatedTask = await updateTaskLog(task);
+					console.log(`${task.uuid}  -> `, updatedTask);
+				});
 			}
 		}
 	} catch (error) {
@@ -184,7 +187,8 @@ async function updateTaskLog(actionLog) {
 			const updatedRecord = await tableModel.model_name.update({
 				result: actionLog.result,
 				status: actionLog.status,
-				attempts: actionLog.attempts
+				attempts: actionLog.attempts,
+				in_queue: 0,
 			}, {
 				where: {
 					uuid: actionLog.uuid

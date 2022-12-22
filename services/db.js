@@ -71,7 +71,13 @@ function setDataType(colType) {
 	}
 	if (colType === "TEXT") {
 		return {
-			type: DataTypes.STRING,
+			type: DataTypes.STRING, // 255 chars
+			defaultValue: "",
+		};
+	}
+	if (colType === "BIGTEXT") {
+		return {
+			type: DataTypes.TEXT, // unlimited chars
 			defaultValue: "",
 		};
 	}
