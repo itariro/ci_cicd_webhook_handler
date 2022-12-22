@@ -1,4 +1,3 @@
-const moment = require("moment");
 const {
 	resultListForWooCommerce
 } = require("../utils/message_formats");
@@ -6,100 +5,6 @@ const {
 	createProductsList,
 	createProductsForWooCommerceList
 } = require("../utils/message_helper");
-
-/* ---------- TASK LOGS ---------- */
-async function updateTaskLog(actionLog) {
-	/* update single log entry */
-	// tableAction({action:"update", resource:"", payload:})
-	try {
-		let tableModel = global.CURRENT_MODELS.find((tableProperties) => tableProperties.table_name === "task");
-		if (tableModel != null) {
-			const updatedRecord = await tableModel.model_name.update({
-				result: JSON.stringify(
-					actionLog.result
-				), status: actionLog.status
-			}, {
-				where: {
-					uuid: actionLog.uuid
-				}
-			});
-			if (updatedRecord) {
-				await tableModel.model_name.increment({ attempts: 1 }, { where: { uuid: actionLog.uuid } });
-				return {
-					error: false,
-					data: updatedRecord
-				};
-			} else {
-				return {
-					error: true,
-					message: "resource does not exist"
-				};
-			}
-		} else {
-			return {
-				error: true,
-				message: "resource does not exist"
-			};
-		}
-	} catch (error) {
-		return {
-			error: true,
-			message: err.message
-		};
-	}
-}
-
-async function createBroadcastLog(broadcastPackage) {
-	/* create new single log entry */
-
-	let db = dbConnection();
-	db.run(
-		`INSERT INTO task_result_cast (date, payload, user, uuid, status, attempts) VALUES(?,?,?,?,?,?)`,
-		[
-			moment().format(),
-			JSON.stringify(broadcastPackage.payload),
-			broadcastPackage.user,
-			broadcastPackage.uuid,
-			"pending",
-			0,
-		],
-		function (err) {
-			if (err) {
-				return {
-					error: true,
-					message: err.message,
-				};
-			}
-			return {
-				error: false,
-				data: this.lastID,
-			};
-		}
-	);
-	db.close();
-}
-async function updateBroadcastLog(actionLog) {
-	/* update single log entry */
-
-	let db = dbConnection();
-	db.run(
-		`UPDATE task_result_cast SET status = '${actionLog.status}', attempts = attempts + 1 WHERE uuid = '${actionLog.uuid}'`,
-		[],
-		function (err) {
-			if (err) {
-				return {
-					error: true,
-					message: err.message,
-				};
-			}
-			return {
-				error: false,
-				data: this.lastID,
-			};
-		}
-	);
-	db.close();
-}
 
 async function scrapOnBeforward(task) {
 	let partNumber = task.query.replace(/\s/g, "");
@@ -216,7 +121,7 @@ async function scrapOnBeforward(task) {
 							} catch (error) {
 								console.log(error.message);
 								resolve({
-									status: 1,
+									status: 0,
 									uuid: task.uuid,
 									attempts: task.attempts + 1,
 									result: JSON.stringify({ error: true, message: error.message }),
@@ -236,7 +141,7 @@ async function scrapOnBeforward(task) {
 					});
 			} catch (error) {
 				resolve({
-					status: 1,
+					status: 0,
 					uuid: task.uuid,
 					attempts: task.attempts + 1,
 					result: JSON.stringify({ error: true, message: error.message }),
@@ -262,7 +167,7 @@ async function addProductToWooCommerce(objProduct, task) {
 		consumerSecret: "cs_cacb5dd089b7c84981162190b55615f6cd20f543",
 		version: "wc/v3",
 	});
-	let resultObj = { error: true, message: "this is a generic message", data: [] };
+	let resultObj = { error: true, message: "this is a generic message", data_short: [], data_full: [] };
 
 	return new Promise(async function (resolve, reject) {
 		// Create a product see more in https://woocommerce.github.io/woocommerce-rest-api-docs/#product-properties
@@ -281,7 +186,8 @@ async function addProductToWooCommerce(objProduct, task) {
 						});
 
 						resultObj.error = false;
-						resultObj.data = modifiedArr;
+						resultObj.data_short = modifiedArr; // for sending to user
+						resultObj.data_full = response.data.create; // for cataloging
 						resolve(resultObj);
 					} catch (error) {
 						resultObj.error = true;

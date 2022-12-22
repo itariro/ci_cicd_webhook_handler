@@ -1,7 +1,4 @@
 const { Sequelize, DataTypes } = require("sequelize");
-const sqlite3 = require("sqlite3").verbose();
-const moment = require("moment");
-const { processPendingTasks } = require("./task_manager");
 let sequelizeInstance = dbConnectionSequelize();
 global.CURRENT_MODELS = [];
 
@@ -22,11 +19,8 @@ async function createDatabase() {
 				model_name: registerModel(resource.table, resource.table, fields),
 			});
 		});
-		// db.close();
 		await sequelizeInstance.sync({ force: true, logging:false });
 		console.log("All models were synchronized successfully.");
-		// console.log("models -> ", global.CURRENT_MODELS);
-
 		return {error: false, message: "all models were synchronized successfully."};
 	} catch (error) {
 		console.log(error);
@@ -94,6 +88,14 @@ function setDataType(colType) {
 	}
 }
 
+
+/* ---------- AUXILIARY FUNCTIONS ---------- */
+async function dbConnectionSequelize() {
+	return new Sequelize(
+		"postgres://majestic_admin:8DVa3SBu38PLYosK87D8E@majestic-apps-db.cropenlgdxvr.us-east-1.rds.amazonaws.com:5432/kuchando_auto"
+	);
+}
+
 async function dbTest() {
 	sequelizeInstance
 		.authenticate()
@@ -105,112 +107,8 @@ async function dbTest() {
 		});
 }
 
-async function purgeSingleTable(tableName, tableAction) {
-	/* purge the whole database */
-	let db = dbConnection();
-	tableAction === "DELETE"
-		? db.run(`DELETE FROM ${tableName};`)
-		: db.run(`DROP TABLE ${tableName};`);
-	db.close();
-}
-
-/* ---------- TASK LOGS ---------- */
-async function updateTaskLog(actionLog) {
-	/* update single log entry */
-
-	let db = dbConnection();
-	db.run(
-		`UPDATE task SET status = '${actionLog.status}', attempts = attempts + 1 WHERE uuid = '${actionLog.uuid}'`,
-		[],
-		function (err) {
-			if (err) {
-				return {
-					error: true,
-					message: err.message,
-				};
-			}
-			return {
-				error: false,
-				data: this.lastID,
-			};
-		}
-	);
-	db.close();
-}
-
-/* ---------- INCIDENT LOGS ---------- */
-async function createIncidentLog(incidentLog) {
-	/* create new single log entry */
-	try {
-		let tableModel = global.CURRENT_MODELS.find(
-			(tableProperties) => tableProperties.table_name === "incident"
-		);
-		if (tableModel != null) {
-			const newRecord = await tableModel.model_name.create({
-				date: moment().format(),
-				description: incidentLog.description,
-				source: incidentLog.source,
-				severity: incidentLog.severity,
-			});
-			if (newRecord) {
-				return {
-					error: false,
-					data: newRecord,
-				};
-			} else {
-				return {
-					error: true,
-					message: "resource does not exist",
-				};
-			}
-		} else {
-			return {
-				error: true,
-				message: "resource does not exist",
-			};
-		}
-	} catch (error) {
-		return {
-			error: true,
-			message: error.message,
-		};
-	}
-}
-
-/* ---------- AUXILIARY FUNCTIONS ---------- */
-function dbConnection() {
-	return new sqlite3.Database(
-		"./db/ci_cicd_webhook.db",
-		sqlite3.OPEN_READWRITE,
-		(err) => {
-			if (err) {
-				console.error(erro.message);
-			}
-			console.log("Connected to the logs database.");
-		}
-	);
-}
-
-function dbConnectionSequelize() {
-	return new Sequelize(
-		"postgres://majestic_admin:8DVa3SBu38PLYosK87D8E@majestic-apps-db.cropenlgdxvr.us-east-1.rds.amazonaws.com:5432/kuchando_auto"
-	);
-}
-
-const searchInArray = (haystack, criteria, needle) => {
-	return haystack.filter((hay) => {
-		return criteria.some(
-			(newItem) =>
-				hay[newItem].toString().toLowerCase().indexOf(needle.toLowerCase()) > -1
-		);
-	});
-};
-
 module.exports = {
-	processPendingTasks,
-	createIncidentLog,
 	createDatabase,
-	purgeSingleTable,
 	dbConnection,
 	dbConnectionSequelize,
 	dbTest,

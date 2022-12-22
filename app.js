@@ -1,20 +1,23 @@
 require("dotenv").config();
+const compression = require("compression");
+const helmet = require("helmet");
 const express = require("express");
 const app = express();
+app.use(helmet());
 const path = require("path");
 const { engine } = require("express-handlebars");
 const logger = require("./middleware/logger");
 const db = require("./services/db");
 const moment = require("moment");
 const { listenForMessages } = require("./services/rabbitmq");
-const { processPendingTasks, manageQueuedTasks, processPendingBroadcastTasks } = require("./services/task_manager");
+const { processPendingTasks, processPendingBroadcastTasks, createIncidentLog } = require("./services/task_manager");
 const appConfigs = require("./services/api_config").getAPIConfig();
-const sequelizeInstance = db.dbConnectionSequelize();
 
 /* Init middleware */
 app.use(logger);
 
 /* Body parser middleware */
+
 app.use(express.json()); // body parser
 app.use(express.urlencoded({ extended: false }));
 
@@ -36,15 +39,18 @@ app.get("/", (req, res) => {
 /* set static directory */
 app.use(express.static(path.join(__dirname, "public")));
 
+/* compress all routes */
+app.use(compression());
+
 /* tasks route */
-app.use("/api/v1/task", require("./routes/api/task"));
+app.use("/api/v2/task", require("./routes/api/task"));
 
 /* incidents route */
-app.use("/api/v1/incident", require("./routes/api/incident"));
+app.use("/api/v2/incident", require("./routes/api/incident"));
 
 /* resources route - this works for all tables */
-app.use("/api/v1/resource", require("./routes/api/resource"));
-app.use("/api/v1/data", require("./routes/api/data"));
+app.use("/api/v2/resource", require("./routes/api/resource"));
+app.use("/api/v2/data", require("./routes/api/data"));
 
 /* Error handler middleware */
 app.use((err, req, res, next) => {
@@ -96,11 +102,12 @@ app.listen(PORT, function () {
         }
 
         /* log incident */
-        db.createIncidentLog({
+        createIncidentLog({
           description: "App Restart",
           source: "System",
           severity: "HIGH",
         });
+
       })
       .catch(function (err) {
         console.log(err);
