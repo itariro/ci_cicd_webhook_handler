@@ -13,7 +13,7 @@ async function getAPIConfig () {
 		});
 		return sanitizedEntries;
 	} catch (error) {
-		console.log(`Error fetching config section : ${error}`);
+		console.log(` [*] Error fetching config section : ${error}`);
 	}
 };
 module.exports = {

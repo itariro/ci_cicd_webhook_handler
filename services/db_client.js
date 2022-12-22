@@ -261,7 +261,7 @@ async function createResourceGeneric(resourceName, resourceChildren, callback) {
 		let tableModel = global.CURRENT_MODELS.find((tableProperties) => tableProperties.table_name === resourceName);
 		if (tableModel != null) {
 			const newRecord = await tableModel.model_name.create(resourceChildren);
-			console.log("new record auto-generated ID:", newRecord.id);
+			console.log(" [*] new record auto-generated ID:", newRecord.id);
 			callback(null, {
 				error: false,
 				data: newRecord,
@@ -286,14 +286,14 @@ async function readSingleResourceGeneric(resourceName, resourceFilter, callback)
 		if (tableModel != null) {
 			const singleRecord = await tableModel.model_name.findOne({ where: resourceFilter });
 			if (singleRecord === null) {
-				console.log('Not found!');
+				console.log(' [*] Not found!');
 				callback(null, {
 					error: true,
 					message: "record not found",
 				});
 			} else {
 				console.log(singleRecord instanceof tableModel); // true
-				console.log("found -> ", singleRecord); // 'My Title'
+				console.log(" [*] found -> ", singleRecord);
 				callback(null, {
 					error: false,
 					data: singleRecord,

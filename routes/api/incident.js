@@ -3,7 +3,7 @@ const { getAllIncidents } = require("../../services/task_manager");
 const router = express.Router();
 
 /* LIST all incidents */
-router.get("/stats/:year", async function (req, res, next) {
+router.get("/all", async function (req, res, next) {
 	try {
 		const recordedIncidents = await getAllIncidents();
 		recordedIncidents.error

@@ -23,6 +23,7 @@ async function scrapOnBeforward(task) {
 							resolve({
 								status: 1,
 								uuid: task.uuid,
+								in_queue: 0,
 								attempts: task.attempts + 1,
 								result: JSON.stringify({
 									error: true,
@@ -68,10 +69,7 @@ async function scrapOnBeforward(task) {
 									if (row_key !== replacedKey) {
 										// id
 										if (replacedKey == "ref_nogenuine_no") {
-											let newSKU =
-												task.user_mobile + "-" + row[row_key].replace("-", "");
-											newSKU = newSKU.replace('"', "");
-											row["sku"] = newSKU;
+											row["sku"] = task.user_mobile + "-" + row[row_key].replace(/\W/g, "");
 										}
 
 										// price
@@ -114,6 +112,7 @@ async function scrapOnBeforward(task) {
 									resolve({
 										status: 1,
 										uuid: task.uuid,
+										in_queue: 0,
 										attempts: task.attempts + 1,
 										result: JSON.stringify(response),
 									});
@@ -123,6 +122,7 @@ async function scrapOnBeforward(task) {
 								resolve({
 									status: 0,
 									uuid: task.uuid,
+									in_queue: 0,
 									attempts: task.attempts + 1,
 									result: JSON.stringify({ error: true, message: error.message }),
 								});
@@ -135,6 +135,7 @@ async function scrapOnBeforward(task) {
 						resolve({
 							status: 1,
 							uuid: task.uuid,
+							in_queue: 0,
 							attempts: task.attempts + 1,
 							result: JSON.stringify({ error: true, message: "part not found/invalid OEM part number" }),
 						});
@@ -143,6 +144,7 @@ async function scrapOnBeforward(task) {
 				resolve({
 					status: 0,
 					uuid: task.uuid,
+					in_queue: 0,
 					attempts: task.attempts + 1,
 					result: JSON.stringify({ error: true, message: error.message }),
 				});
@@ -151,6 +153,7 @@ async function scrapOnBeforward(task) {
 			resolve({
 				status: 1,
 				uuid: task.uuid,
+				in_queue: 0,
 				attempts: task.attempts + 1,
 				result: JSON.stringify({ error: true, message: "invalid OEM part number" }),
 			});

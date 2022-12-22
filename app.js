@@ -64,8 +64,8 @@ app.use((err, req, res, next) => {
 const PORT = process.env.PORT || 3003;
 app.listen(PORT, function () {
   try {
-    console.log(`Server started on port ${PORT}.`);
-    appConfigs
+    console.log(` [*] Server started on port ${PORT}.`);
+	appConfigs
       .then(async function (apiConfigs) {
         global.API_CONFIGS = apiConfigs;
         global.API_KEY = apiConfigs[0].apiKey;
@@ -88,7 +88,7 @@ app.listen(PORT, function () {
 		  global.QUEUED_TASKS_CRON_JOB = new CronJob(
             "* * * * * *",
             function () {
-              console.log("queued tasks");
+              console.log(" [*] queued tasks");
 			  processPendingBroadcastTasks();
             },
             null,
@@ -119,6 +119,6 @@ app.listen(PORT, function () {
     /* start listening for messages on queue */
     listenForMessages();
   } catch (error) {
-    console.log("Could not start server due to : ", error);
+    console.log(" [*] Could not start server due to : ", error);
   }
 });

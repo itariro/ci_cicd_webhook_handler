@@ -51,7 +51,7 @@ router.post("/sendSMS", async function (req, res, next) {
 			}
 		}
 	} catch (error) {
-		console.error(`error while sending message `, error);
+		console.error(` [*] error while sending message `, error);
 		next(error);
 	}
 });
@@ -75,7 +75,7 @@ router.get("/apikey/set", async function (req, res, next) {
 				}
 			]))
 			.then((entry) => {
-				console.log(`Entry ${entry.sys.id} updated.`);
+				console.log(` [*] Entry ${entry.sys.id} updated.`);
 				/* log incident */
 				global.API_KEY = newApiKey;
 				createIncidentLog({

@@ -5,27 +5,6 @@ const { sendWhatsAppMessage } = require("../utils/message_helper");
 const { interactiveList } = require("../utils/message_formats");
 const { createResourceGeneric } = require("./db_client");
 
-async function processPendingBroadcastTasks() {
-	try {
-		let tableModel = global.CURRENT_MODELS.find(
-			(tableProperties) => tableProperties.table_name === "result_cast"
-		);
-		if (tableModel != null) {
-			const pendingTasks = await tableModel.model_name.findAll({
-				where: {
-					[Op.and]: [{ attempts: [0, 1, 2] }, { status: 0 }],
-				},
-			});
-			// process the outstanding TASKS HERE
-			console.log("pendingTasks -> ", pendingTasks);
-		} else {
-			console.log("resource does not exist");
-		}
-	} catch (error) {
-		console.log(error);
-	}
-}
-
 /* ---------- TASK LOGS ---------- */
 async function processPendingTasks() {
 	try {
@@ -34,6 +13,8 @@ async function processPendingTasks() {
 			global.PENDING_TASKS_CRON_JOB.stop();
 			// instead of awaiting this call, create an array of Promises
 			const promises = pendingTasks.data.map(async (task) => {
+				// mark record as processing
+				lockUnlockTask({uuid: task.uuid, lock:1});
 				return await scrapOnBeforward(task).then(async function (response) {
 					// console.log(`${task.uuid} -> `, response);
 					await updateTaskLog(response);
@@ -62,7 +43,7 @@ async function getAllPendingTasks() {
 			const pendingTasks = await tableModel.model_name.findAll({
 				logging: false,
 				where: {
-					[Op.and]: [{ attempts: [0, 1, 2] }, { status: 0 }],
+					[Op.and]: [{ attempts: [0, 1, 2] }, { status: 0 }, { in_queue: 0 }],
 				},
 			});
 			// process the outstanding TASKS HERE
@@ -163,6 +144,28 @@ async function getAllIncidents() {
 	}
 }
 
+/* ---------- BROADCAST LOG ---------- */
+async function processPendingBroadcastTasks() {
+	try {
+		let tableModel = global.CURRENT_MODELS.find(
+			(tableProperties) => tableProperties.table_name === "result_cast"
+		);
+		if (tableModel != null) {
+			const pendingTasks = await tableModel.model_name.findAll({
+				where: {
+					[Op.and]: [{ attempts: [0, 1, 2] }, { status: 0 }],
+				},
+			});
+			// process the outstanding TASKS HERE
+			console.log("pendingTasks -> ", pendingTasks);
+		} else {
+			console.log("resource does not exist");
+		}
+	} catch (error) {
+		console.log(error);
+	}
+}
+
 /* ---------- AUXILARY FUNCTIONS ---------- */
 const searchInArray = (haystack, criteria, needle) => {
 	return haystack.filter((hay) => {
@@ -182,6 +185,43 @@ async function updateTaskLog(actionLog) {
 				result: actionLog.result,
 				status: actionLog.status,
 				attempts: actionLog.attempts
+			}, {
+				where: {
+					uuid: actionLog.uuid
+				}
+			});
+			if (updatedRecord) {
+				return {
+					error: false,
+					data: updatedRecord
+				};
+			} else {
+				return {
+					error: true,
+					message: "resource does not exist"
+				};
+			}
+		} else {
+			return {
+				error: true,
+				message: "resource does not exist"
+			};
+		}
+	} catch (error) {
+		return {
+			error: true,
+			message: error.message
+		};
+	}
+}
+
+async function lockUnlockTask(actionLog) {
+	/* update single log entry */
+	try {
+		let tableModel = global.CURRENT_MODELS.find((tableProperties) => tableProperties.table_name === "task");
+		if (tableModel != null) {
+			const updatedRecord = await tableModel.model_name.update({
+				in_queue: actionLog.lock
 			}, {
 				where: {
 					uuid: actionLog.uuid
@@ -256,5 +296,6 @@ module.exports = {
 	processPendingTasks,
 	createIncidentLog,
 	getAllTasks,
-	getAllIncidents
+	getAllIncidents,
+	lockUnlockTask
 };

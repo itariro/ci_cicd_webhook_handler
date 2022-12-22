@@ -1,5 +1,5 @@
 const { Sequelize, DataTypes } = require("sequelize");
-let sequelizeInstance = dbConnectionSequelize();
+let sequelizeInstance = new Sequelize(process.env.POSTGRES_DB_CONNECTION);
 global.CURRENT_MODELS = [];
 
 async function createDatabase() {
@@ -7,7 +7,7 @@ async function createDatabase() {
 		/* create database + tables */
 		const resourceSchema = global.API_CONFIGS[0].resourceSchema;
 		resourceSchema.map((resource) => {
-			console.log("creating -> ", resource.table);
+			console.log(" [*] creating -> ", resource.table);
 			const schemaColumns = resource.schema.split(",");
 			var fields = new Object();
 			schemaColumns.forEach((element) => {
@@ -19,12 +19,12 @@ async function createDatabase() {
 				model_name: registerModel(resource.table, resource.table, fields),
 			});
 		});
-		await sequelizeInstance.sync({ force: true, logging:false });
-		console.log("All models were synchronized successfully.");
-		return {error: false, message: "all models were synchronized successfully."};
+		await sequelizeInstance.sync({ force: true, logging: false });
+		console.log(" [*] All models were synchronized successfully.");
+		return { error: false, message: "all models were synchronized successfully." };
 	} catch (error) {
 		console.log(error);
-		return {error: true, message: error};
+		return { error: true, message: error };
 	}
 }
 
@@ -109,7 +109,5 @@ async function dbTest() {
 
 module.exports = {
 	createDatabase,
-	dbConnection,
 	dbConnectionSequelize,
-	dbTest,
 };
