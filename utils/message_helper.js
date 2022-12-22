@@ -1,16 +1,15 @@
+require("dotenv").config();
 const axios = require('axios');
 
-const accessToken = process.env.ACCESS_TOKEN;
-const apiVersion = process.env.VERSION;
-const myNumberId = process.env.PHONE_NUMBER_ID;
-const myBizAcctId = process.env.BUSINESS_ACCOUNT_ID;
+const accessToken = process.env.FACEBOOK_ACCESS_TOKEN;
+const facebookBusinessAccount= process.env.FACEBOOK_MESSAGING_ACCOUNT;
 
 async function sendWhatsAppMessage(data) {
   const config = {
     method: 'post',
-    url: `https://graph.facebook.com/v15.0/111615048453223/messages`,
+    url: `${facebookBusinessAccount}/messages`,
     headers: {
-      'Authorization': `Bearer EAAJuN3hCHRwBAHXZCHqZBFswi1gs3cHnBdWeR9gHzJweEZCkMFajjhhaxfwAgyJd75hST5Loz2IP7orCObg1EWQhVAa1aruZByYlGxG9f5lYZAMddgdBX5YCRcG1ZBBfISeKJPk9mSlGwbK5ZABbZA8yMLJXac8fPhlZBBnIxd97SyxjuZCAB8RnO8bqdggXqIX1KbPo5tOZBbOOAZDZD`,
+	  'Authorization': `Bearer ${accessToken}`,
       'Content-Type': 'application/json'
     },
     data: data
@@ -22,7 +21,7 @@ async function sendWhatsAppMessage(data) {
 async function updateWhatsAppMessage(data) {
 	const config = {
 		method: 'put',
-		url: `https://graph.facebook.com/${apiVersion}/${myNumberId}/messages`,
+		url: `${facebookBusinessAccount}/messages`,
 		headers: {
 			'Authorization': `Bearer ${accessToken}`,
 			'Content-Type': 'application/json'
@@ -143,7 +142,7 @@ function getMessageData(recipient, order) {
 async function listTemplates() {
 	return await axios({
 		method: 'get',
-		url: `https://graph.facebook.com/${apiVersion}/${myBizAcctId}/message_templates`
+		url: `${facebookBusinessAccount}/message_templates`
 			+ '?limit=1000'
 			+ `&access_token=${accessToken}`
 	})
@@ -153,7 +152,7 @@ async function createMessageTemplate(template) {
 	console.log('name:' + process.env.TEMPLATE_NAME_PREFIX + '_' + template.name);
 	const config = {
 		method: 'post',
-		url: `https://graph.facebook.com/${apiVersion}/${myBizAcctId}/message_templates`,
+		url: `${facebookBusinessAccount}/message_templates`,
 		headers: {
 			'Authorization': `Bearer ${accessToken}`,
 			'Content-Type': 'application/json'

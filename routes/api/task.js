@@ -1,12 +1,7 @@
 const express = require("express");
 const router = express.Router();
-const { v4: uuidv4 } = require('uuid');
-const moment = require("moment");
 const {
-	tableActionGeneric,
 	createResourceGeneric,
-	readMultipleResourceGeneric,
-	readMultipleAllResourceGeneric,
 } = require("../../services/db_client");
 const { getAllTasks } = require("../../services/task_manager");
 const { registerUserGeneric } = require("../../services/user_manager");
@@ -14,27 +9,11 @@ const { registerUserGeneric } = require("../../services/user_manager");
 /* LIST all tasks */
 router.get("/:systemid", async function (req, res, next) {
 	try {
-
 		const pendingTasks = await getAllTasks();
 		pendingTasks.error
 			? res.status(400).json(pendingTasks)
 			: res.status(200).json(pendingTasks);
 		return;
-
-		// readMultipleAllResourceGeneric(
-		// 	"task",
-		// 	function (err, result) {
-		// 		if (err) {
-		// 			res.status(400).json({ error: true, message: err.message });
-		// 			return;
-		// 		} else {
-		// 			result.error
-		// 				? res.status(400).json(result)
-		// 				: res.status(200).json(result);
-		// 			return;
-		// 		}
-		// 	}
-		// );
 	} catch (error) {
 		console.error(`error while fetching task list`, error);
 		res.status(400).json({ error: true, message: error });
@@ -45,6 +24,7 @@ router.get("/:systemid", async function (req, res, next) {
 /* POST NEW task */
 router.post("/:systemid", async function (req, res, next) {
 	try {
+		const { v4: uuidv4 } = require('uuid');
 
 		registerUserGeneric({ mobile_number: req.body.user, status: 1, balance: 2.00 }, // each new user gets £2 worth of points : CAC
 			function (user_err, user_result) {

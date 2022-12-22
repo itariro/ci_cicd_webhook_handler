@@ -1,4 +1,3 @@
-const moment = require("moment");
 const {
 	resultListForWooCommerce
 } = require("../utils/message_formats");
@@ -6,100 +5,6 @@ const {
 	createProductsList,
 	createProductsForWooCommerceList
 } = require("../utils/message_helper");
-
-/* ---------- TASK LOGS ---------- */
-async function updateTaskLog(actionLog) {
-	/* update single log entry */
-	// tableAction({action:"update", resource:"", payload:})
-	try {
-		let tableModel = global.CURRENT_MODELS.find((tableProperties) => tableProperties.table_name === "task");
-		if (tableModel != null) {
-			const updatedRecord = await tableModel.model_name.update({
-				result: JSON.stringify(
-					actionLog.result
-				), status: actionLog.status
-			}, {
-				where: {
-					uuid: actionLog.uuid
-				}
-			});
-			if (updatedRecord) {
-				await tableModel.model_name.increment({ attempts: 1 }, { where: { uuid: actionLog.uuid } });
-				return {
-					error: false,
-					data: updatedRecord
-				};
-			} else {
-				return {
-					error: true,
-					message: "resource does not exist"
-				};
-			}
-		} else {
-			return {
-				error: true,
-				message: "resource does not exist"
-			};
-		}
-	} catch (error) {
-		return {
-			error: true,
-			message: err.message
-		};
-	}
-}
-
-async function createBroadcastLog(broadcastPackage) {
-	/* create new single log entry */
-
-	let db = dbConnection();
-	db.run(
-		`INSERT INTO task_result_cast (date, payload, user, uuid, status, attempts) VALUES(?,?,?,?,?,?)`,
-		[
-			moment().format(),
-			JSON.stringify(broadcastPackage.payload),
-			broadcastPackage.user,
-			broadcastPackage.uuid,
-			"pending",
-			0,
-		],
-		function (err) {
-			if (err) {
-				return {
-					error: true,
-					message: err.message,
-				};
-			}
-			return {
-				error: false,
-				data: this.lastID,
-			};
-		}
-	);
-	db.close();
-}
-async function updateBroadcastLog(actionLog) {
-	/* update single log entry */
-
-	let db = dbConnection();
-	db.run(
-		`UPDATE task_result_cast SET status = '${actionLog.status}', attempts = attempts + 1 WHERE uuid = '${actionLog.uuid}'`,
-		[],
-		function (err) {
-			if (err) {
-				return {
-					error: true,
-					message: err.message,
-				};
-			}
-			return {
-				error: false,
-				data: this.lastID,
-			};
-		}
-	);
-	db.close();
-}
 
 async function scrapOnBeforward(task) {
 	let partNumber = task.query.replace(/\s/g, "");
@@ -118,6 +23,7 @@ async function scrapOnBeforward(task) {
 							resolve({
 								status: 1,
 								uuid: task.uuid,
+								in_queue: 0,
 								attempts: task.attempts + 1,
 								result: JSON.stringify({
 									error: true,
@@ -126,7 +32,7 @@ async function scrapOnBeforward(task) {
 							});
 						} else {
 							let results = tablesAsJson[0];
-							console.log("there were results...");
+							console.log(" [*] there were results...");
 							results.forEach((element) => {
 								Object.keys(element).forEach((key) => {
 									if (
@@ -163,10 +69,7 @@ async function scrapOnBeforward(task) {
 									if (row_key !== replacedKey) {
 										// id
 										if (replacedKey == "ref_nogenuine_no") {
-											let newSKU =
-												task.user_mobile + "-" + row[row_key].replace("-", "");
-											newSKU = newSKU.replace('"', "");
-											row["sku"] = newSKU;
+											row["sku"] = task.user_mobile + "-" + row[row_key].replace(/\W/g, "");
 										}
 
 										// price
@@ -205,19 +108,21 @@ async function scrapOnBeforward(task) {
 									productsForAdditionToWooCommerce,
 									task
 								).then(function (response) {
-									console.log("woo => ", response);
+									// console.log("woo => ", response);
 									resolve({
 										status: 1,
 										uuid: task.uuid,
+										in_queue: 0,
 										attempts: task.attempts + 1,
-										result: JSON.stringify(response),
+										result: response,
 									});
 								});
 							} catch (error) {
 								console.log(error.message);
 								resolve({
-									status: 1,
+									status: 0,
 									uuid: task.uuid,
+									in_queue: 0,
 									attempts: task.attempts + 1,
 									result: JSON.stringify({ error: true, message: error.message }),
 								});
@@ -230,14 +135,16 @@ async function scrapOnBeforward(task) {
 						resolve({
 							status: 1,
 							uuid: task.uuid,
+							in_queue: 0,
 							attempts: task.attempts + 1,
 							result: JSON.stringify({ error: true, message: "part not found/invalid OEM part number" }),
 						});
 					});
 			} catch (error) {
 				resolve({
-					status: 1,
+					status: 0,
 					uuid: task.uuid,
+					in_queue: 0,
 					attempts: task.attempts + 1,
 					result: JSON.stringify({ error: true, message: error.message }),
 				});
@@ -246,6 +153,7 @@ async function scrapOnBeforward(task) {
 			resolve({
 				status: 1,
 				uuid: task.uuid,
+				in_queue: 0,
 				attempts: task.attempts + 1,
 				result: JSON.stringify({ error: true, message: "invalid OEM part number" }),
 			});
@@ -281,7 +189,8 @@ async function addProductToWooCommerce(objProduct, task) {
 						});
 
 						resultObj.error = false;
-						resultObj.data = modifiedArr;
+						resultObj.data = modifiedArr; // for sending to user
+						// resultObj.data_full = response.data.create; // for cataloging - this is unnecessary, this already exists in WooCommerce
 						resolve(resultObj);
 					} catch (error) {
 						resultObj.error = true;
