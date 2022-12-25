@@ -38,6 +38,19 @@ function createProductsList(product) {
 	}
 }
 
+function createProductsListForCatalogue(product) {
+	return {
+		"facebook_commerce_id": `${product.sku}_${product.id}`,
+		"description": product.description,
+		"price": product.price,
+		"permalink": product.permalink,
+		"images": product.images,
+		"date_created": product.date_created,
+		"woocommerce_id": product.id,
+		"sku": product.sku
+	}
+}
+
 function createProductsForWooCommerceList(product) {
 	return {
 		"sku": `${product.sku}`,
@@ -169,11 +182,12 @@ async function createMessageTemplate(template) {
 }
 
 module.exports = {
-	sendWhatsAppMessage: sendWhatsAppMessage,
-	updateWhatsAppMessage: updateWhatsAppMessage,
-	listTemplates: listTemplates,
-	createMessageTemplate: createMessageTemplate,
-	getMessageData: getMessageData,
-	createProductsList: createProductsList,
-	createProductsForWooCommerceList: createProductsForWooCommerceList
+	sendWhatsAppMessage,
+	updateWhatsAppMessage,
+	listTemplates,
+	createMessageTemplate,
+	getMessageData,
+	createProductsList,
+	createProductsListForCatalogue,
+	createProductsForWooCommerceList
 };

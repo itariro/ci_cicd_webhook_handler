@@ -2,7 +2,7 @@ const db = require("./db");
 const { Op } = require("sequelize");
 const { scrapOnBeforward } = require("./search_app");
 const { sendWhatsAppMessage } = require("../utils/message_helper");
-const { interactiveList } = require("../utils/message_formats");
+const { interactiveList, plainText } = require("../utils/message_formats");
 const { createResourceGeneric } = require("./db_client");
 
 /* ---------- TASK LOGS ---------- */
@@ -14,7 +14,7 @@ async function processPendingTasks() {
 			// instead of awaiting this call, create an array of Promises
 			const promises = pendingTasks.data.map(async (task) => {
 				// mark record as processing
-				lockUnlockTask({uuid: task.uuid, lock:1});
+				lockUnlockTask("task", { uuid: task.uuid, lock: 1 });
 				return await scrapOnBeforward(task).then(async function (response) {
 					// console.log(`${task.uuid} -> `, response);
 					return response;
@@ -25,7 +25,7 @@ async function processPendingTasks() {
 			if (searchTasks.length > 0) {
 				console.log(searchTasks);
 				searchTasks.map(async (task) => {
-					const updatedTask = await updateTaskLog(task);
+					const updatedTask = await updateTaskLog("task", task);
 					console.log(`${task.uuid}  -> `, updatedTask);
 				});
 			}
@@ -156,18 +156,18 @@ async function processPendingBroadcastTasks() {
 			// instead of awaiting this call, create an array of Promises
 			const promises = pendingTasks.data.map(async (task) => {
 				// mark record as processing
-				lockUnlockTask({uuid: task.uuid, lock:1});
-				return await scrapOnBeforward(task).then(async function (response) {
+				lockUnlockTask("result_cast", { uuid: task.uuid, lock: 1 });
+				return await sendWhatsAppMessage(task).then(async function (response) { // Facebook Send Message
 					// console.log(`${task.uuid} -> `, response);
 					return response;
 				});
 			});
 			// use await on Promise.all so the Promises execute in parallel
-			const searchTasks = await Promise.all(promises);
-			if (searchTasks.length > 0) {
-				console.log(searchTasks);
-				searchTasks.map(async (task) => {
-					const updatedTask = await updateTaskLog(task);
+			const broadcastTasks = await Promise.all(promises);
+			if (broadcastTasks.length > 0) {
+				console.log(broadcastTasks);
+				broadcastTasks.map(async (task) => {
+					const updatedTask = await updateTaskLog("result_cast", task);
 					console.log(`${task.uuid}  -> `, updatedTask);
 				});
 			}
@@ -187,7 +187,7 @@ async function getAllPendingBroadcastTasks() {
 		if (tableModel != null) {
 			const pendingTasks = await tableModel.model_name.findAll({
 				where: {
-					[Op.and]: [{ attempts: [0, 1, 2] }, { status: 0 }],
+					[Op.and]: [{ attempts: [0, 1, 2, 3, 4] }, { status: 0 }, { in_queue: 0 }], //TODO: we should fix this, ideally x>=0 AND <=4
 				},
 			});
 			// process the outstanding TASKS HERE
@@ -222,10 +222,10 @@ const searchInArray = (haystack, criteria, needle) => {
 	});
 };
 
-async function updateTaskLog(actionLog) {
+async function updateTaskLog(resourceName, actionLog) {
 	/* update single log entry */
 	try {
-		let tableModel = global.CURRENT_MODELS.find((tableProperties) => tableProperties.table_name === "task");
+		let tableModel = global.CURRENT_MODELS.find((tableProperties) => tableProperties.table_name === resourceName);
 		if (tableModel != null) {
 			const updatedRecord = await tableModel.model_name.update({
 				result: actionLog.result,
@@ -262,10 +262,10 @@ async function updateTaskLog(actionLog) {
 	}
 }
 
-async function lockUnlockTask(actionLog) {
+async function lockUnlockTask(resourceName, actionLog) {
 	/* update single log entry */
 	try {
-		let tableModel = global.CURRENT_MODELS.find((tableProperties) => tableProperties.table_name === "task");
+		let tableModel = global.CURRENT_MODELS.find((tableProperties) => tableProperties.table_name === resourceName);
 		if (tableModel != null) {
 			const updatedRecord = await tableModel.model_name.update({
 				in_queue: actionLog.lock
@@ -326,16 +326,141 @@ async function sendInteractiveMessage(uuid, userNumber, messageToSend) {
 }
 
 async function sendPlainTextMessage(userNumber, messageToSend) {
-	let plainTextMessage = plainText;
-	plainTextMessage.to = userNumber;
-	plainTextMessage.text.body = messageToSend;
-	await sendWhatsAppMessage(plainTextMessage)
-		.then(function (response) {
-			console.log(response);
-		})
-		.catch(function (error) {
-			console.log(error);
-		});
+	return new Promise(async function (resolve, reject) {
+		try {
+			let plainTextMessage = plainText;
+			plainTextMessage.to = userNumber;
+			plainTextMessage.text.body = messageToSend;
+			await sendWhatsAppMessage(plainTextMessage)
+				.then(function (response) {
+					console.log(response); // success
+					resolve({
+						status: 1,
+						uuid: task.uuid,
+						in_queue: 0,
+						attempts: task.attempts + 1,
+						result: JSON.stringify({
+							error: true,
+							message: "part not found/invalid OEM part number",
+						})
+					});
+				})
+				.catch(function (error) {
+					console.log(error);
+					resolve({
+						status: 1,
+						uuid: task.uuid,
+						in_queue: 0,
+						attempts: task.attempts + 1,
+						result: JSON.stringify({
+							error: true,
+							message: "part not found/invalid OEM part number",
+						})
+					});
+				});
+		} catch (error) {
+			resolve({
+				status: 1,
+				uuid: task.uuid,
+				in_queue: 0,
+				attempts: task.attempts + 1,
+				result: JSON.stringify({
+					error: true,
+					message: "part not found/invalid OEM part number",
+				})
+			});
+		}
+	});
+}
+
+async function sendWhatsAppMessage(task) {
+	return new Promise(async function (resolve, reject) {
+		try {
+			if (task.payload_type == 0) { // plain text
+				let plainTextMessage = plainText;
+				plainTextMessage.to = task.user_mobile;
+				plainTextMessage.text.body = task.payload;
+				await sendWhatsAppMessage(plainTextMessage)
+					.then(function (response) {
+						console.log(response); // success
+						resolve({
+							status: 1,
+							uuid: task.uuid,
+							in_queue: 0,
+							attempts: task.attempts + 1,
+							result: JSON.stringify({
+								error: false,
+								message: response,
+							})
+						});
+					})
+					.catch(function (error) {
+						console.log(error);
+						resolve({
+							status: 0,
+							uuid: task.uuid,
+							in_queue: 0,
+							attempts: task.attempts + 1,
+							result: JSON.stringify({
+								error: true,
+								message: error,
+							})
+						});
+					});
+			}
+
+			if (task.payload_type == 1) { // interactive message
+				let productsList = interactiveList;
+				productsList.to = task.user_mobile; //
+				productsList.interactive.action.sections[0].product_items = task.payload;
+				if (task.payload.length > 5) {
+					productsList.interactive.action.sections[0].product_items.length = 5; // TODO: SERIOUS BUG : max is 10, but need better logic to handle this
+				}
+
+				await sendWhatsAppMessage(productsList)
+					.then(function (response) {
+						console.log(response);
+						resolve({
+							status: 1,
+							uuid: task.uuid,
+							in_queue: 0,
+							attempts: task.attempts + 1,
+							result: JSON.stringify({
+								error: false,
+								message: response,
+							})
+						});
+					})
+					.catch(function (error) {
+						console.log(error);
+						resolve({
+							status: 0,
+							uuid: task.uuid,
+							in_queue: 0,
+							attempts: task.attempts + 1,
+							result: JSON.stringify({
+								error: true,
+								message: error,
+							})
+						});
+					});
+			}
+
+		} catch (error) {
+			resolve({
+				status: 0,
+				uuid: task.uuid,
+				in_queue: 0,
+				attempts: task.attempts + 1,
+				result: JSON.stringify({
+					error: true,
+					message: error,
+				})
+			});
+		}
+	});
+
+
 }
 
 module.exports = {

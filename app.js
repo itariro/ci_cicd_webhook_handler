@@ -86,10 +86,10 @@ app.listen(PORT, function () {
           );
 		  
 		  global.QUEUED_TASKS_CRON_JOB = new CronJob(
-            "* * * * * *",
+            "* * * * *",
             function () {
               console.log(" [*] queued tasks");
-			  processPendingBroadcastTasks();
+			  // processPendingBroadcastTasks();
             },
             null,
             false,
@@ -98,7 +98,7 @@ app.listen(PORT, function () {
           // Use this if the 4th param is default value(false)
           // job.start();
 		  global.PENDING_TASKS_CRON_JOB.start();
-		  global.QUEUED_TASKS_CRON_JOB.stop();
+		  global.QUEUED_TASKS_CRON_JOB.start();
         }
 
         /* log incident */

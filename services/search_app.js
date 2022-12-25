@@ -3,8 +3,10 @@ const {
 } = require("../utils/message_formats");
 const {
 	createProductsList,
-	createProductsForWooCommerceList
+	createProductsForWooCommerceList,
+	createProductsListForCatalogue
 } = require("../utils/message_helper");
+const moment = require("moment");
 
 async function scrapOnBeforward(task) {
 	let partNumber = task.query.replace(/\s/g, "");
@@ -114,7 +116,8 @@ async function scrapOnBeforward(task) {
 										uuid: task.uuid,
 										in_queue: 0,
 										attempts: task.attempts + 1,
-										result: response,
+										expiry_date: moment().add(12, 'hours'), // TODO: let's start with 12 hours
+										result: JSON.stringify(response),
 									});
 								});
 							} catch (error) {
@@ -170,7 +173,7 @@ async function addProductToWooCommerce(objProduct, task) {
 		consumerSecret: "cs_cacb5dd089b7c84981162190b55615f6cd20f543",
 		version: "wc/v3",
 	});
-	let resultObj = { error: true, message: "this is a generic message", data: [] };
+	let resultObj = { error: true, message: "this is a generic message", data: [], data_full: [] };
 
 	return new Promise(async function (resolve, reject) {
 		// Create a product see more in https://woocommerce.github.io/woocommerce-rest-api-docs/#product-properties
@@ -181,16 +184,17 @@ async function addProductToWooCommerce(objProduct, task) {
 				console.log("Response Status:", response.status);
 				if (response.data.create) {
 					try {
-						let modifiedArr = [];
+						let modifiedArr = []; let catalogArr = [];
 						response.data.create.map(function (product) {
 							if (product.id > 0) {
 								modifiedArr.push(createProductsList(product));
+								catalogArr.push(createProductsListForCatalogue(product));
 							}
 						});
 
 						resultObj.error = false;
 						resultObj.data = modifiedArr; // for sending to user
-						// resultObj.data_full = response.data.create; // for cataloging - this is unnecessary, this already exists in WooCommerce
+						resultObj.data_full = catalogArr; // for cataloging - this is unnecessary, this already exists in WooCommerce
 						resolve(resultObj);
 					} catch (error) {
 						resultObj.error = true;
