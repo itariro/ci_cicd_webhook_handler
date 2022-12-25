@@ -150,6 +150,37 @@ async function getAllIncidents() {
 /* ---------- BROADCAST LOG ---------- */
 async function processPendingBroadcastTasks() {
 	try {
+		const pendingTasks = await getAllPendingBroadcastTasks();
+		if (!pendingTasks.error) {
+			global.QUEUED_TASKS_CRON_JOB.stop();
+			// instead of awaiting this call, create an array of Promises
+			const promises = pendingTasks.data.map(async (task) => {
+				// mark record as processing
+				lockUnlockTask({uuid: task.uuid, lock:1});
+				return await scrapOnBeforward(task).then(async function (response) {
+					// console.log(`${task.uuid} -> `, response);
+					return response;
+				});
+			});
+			// use await on Promise.all so the Promises execute in parallel
+			const searchTasks = await Promise.all(promises);
+			if (searchTasks.length > 0) {
+				console.log(searchTasks);
+				searchTasks.map(async (task) => {
+					const updatedTask = await updateTaskLog(task);
+					console.log(`${task.uuid}  -> `, updatedTask);
+				});
+			}
+		}
+	} catch (error) {
+		console.log(error);
+	} finally {
+		global.QUEUED_TASKS_CRON_JOB.start();
+	}
+}
+
+async function getAllPendingBroadcastTasks() {
+	try {
 		let tableModel = global.CURRENT_MODELS.find(
 			(tableProperties) => tableProperties.table_name === "result_cast"
 		);
@@ -161,11 +192,23 @@ async function processPendingBroadcastTasks() {
 			});
 			// process the outstanding TASKS HERE
 			console.log("pendingTasks -> ", pendingTasks);
+			return {
+				error: false,
+				data: pendingTasks,
+			};
 		} else {
 			console.log("resource does not exist");
+			return {
+				error: true,
+				message: "resource does not exist",
+			};
 		}
 	} catch (error) {
 		console.log(error);
+		return {
+			error: true,
+			message: error,
+		};
 	}
 }
 
