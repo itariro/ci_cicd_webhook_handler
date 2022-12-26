@@ -89,7 +89,7 @@ app.listen(PORT, function () {
             "* * * * *",
             function () {
               console.log(" [*] queued tasks");
-			  // processPendingBroadcastTasks();
+			  processPendingBroadcastTasks();
             },
             null,
             false,

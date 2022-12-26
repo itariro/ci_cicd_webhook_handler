@@ -27,6 +27,36 @@ async function processPendingTasks() {
 				searchTasks.map(async (task) => {
 					const updatedTask = await updateTaskLog("task", task);
 					console.log(`${task.uuid}  -> `, updatedTask);
+					// TODO: get user balance and charge what's necessary
+
+					// add broadcast task if search task was successful
+					if (task.status != 0) {
+						// send response
+						// 0 = plain text, 1 = interactive
+						const taskResult = JSON.parse(task.result);
+						const taskPayload = (typeof taskResult.message === 'string') ? { payload: taskResult.message, type: 0 } : { payload: JSON.stringify(taskResult.message), type: 1 };
+
+						createResourceGeneric(
+							"result_cast",
+							{
+								uuid: task.uuid,
+								user_mobile: task.user_mobile,
+								payload: taskPayload.payload,
+								payload_type: taskPayload.type
+							},
+							function (task_err, task_result) {
+								if (task_err) {
+									// res.status(400).json({ error: true, message: task_err.message });
+									console.log({ error: true, message: task_err.message });
+									return;
+								} else {
+									//res.status(task_result.error ? 400 : 200).json({ user: user_result, task: task_result });
+									console.log(task_result);
+									return;
+								}
+							}
+						);
+					}
 				});
 			}
 		}
@@ -191,7 +221,7 @@ async function getAllPendingBroadcastTasks() {
 				},
 			});
 			// process the outstanding TASKS HERE
-			console.log("pendingTasks -> ", pendingTasks);
+			console.log("pendingBroadcastTasks -> ", pendingTasks);
 			return {
 				error: false,
 				data: pendingTasks,
@@ -376,7 +406,7 @@ async function sendPlainTextMessage(userNumber, messageToSend) {
 async function processWhatsAppMessage(task) {
 	return new Promise(async function (resolve, reject) {
 		try {
-			if (task.payload_type == 0) { // plain text
+			if (task.payload_type === 0) { // plain text
 				let plainTextMessage = plainText;
 				plainTextMessage.to = task.user_mobile;
 				plainTextMessage.text.body = task.payload;
@@ -409,17 +439,17 @@ async function processWhatsAppMessage(task) {
 					});
 			}
 
-			if (task.payload_type == 1) { // interactive message
+			if (task.payload_type === 1) { // interactive message
 				let productsList = interactiveList;
 				productsList.to = task.user_mobile; //
-				productsList.interactive.action.sections[0].product_items = task.payload;
+				productsList.interactive.action.sections[0].product_items = JSON.parse(task.payload);
 				if (task.payload.length > 5) {
 					productsList.interactive.action.sections[0].product_items.length = 5; // TODO: SERIOUS BUG : max is 10, but need better logic to handle this
 				}
 
 				await sendWhatsAppMessage(productsList)
 					.then(function (response) {
-						console.log(response);
+						console.log(response.data);
 						resolve({
 							status: 1,
 							uuid: task.uuid,
@@ -427,7 +457,7 @@ async function processWhatsAppMessage(task) {
 							attempts: task.attempts + 1,
 							result: JSON.stringify({
 								error: false,
-								message: response,
+								message: response.data,
 							})
 						});
 					})
@@ -458,8 +488,10 @@ async function processWhatsAppMessage(task) {
 			});
 		}
 	});
+}
 
-
+const isObject = obj => {
+	return Object.prototype.toString.call(obj) === '[object Object]'
 }
 
 module.exports = {

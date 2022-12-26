@@ -22,15 +22,23 @@ async function scrapOnBeforward(task) {
 					.then(async (tablesAsJson) => {
 						if (tablesAsJson[0] == undefined) {
 							console.log("there were no results...");
+							let taskLog = (task.log === "") ? [] : JSON.parse(task.log);
 							resolve({
 								status: 1,
 								uuid: task.uuid,
+								user_mobile: task.user_mobile,
 								in_queue: 0,
 								attempts: task.attempts + 1,
 								result: JSON.stringify({
 									error: true,
 									message: "part not found/invalid OEM part number",
-								})
+								}),
+								log: JSON.stringify(taskLog.push({
+									date: moment().format(), attempt: task.attempts + 1, result: {
+										error: true,
+										message: "part not found/invalid OEM part number",
+									}
+								}))
 							});
 						} else {
 							let results = tablesAsJson[0];
@@ -111,23 +119,29 @@ async function scrapOnBeforward(task) {
 									task
 								).then(function (response) {
 									// console.log("woo => ", response);
+									let taskLog = (task.log === "") ? [] : JSON.parse(task.log);
 									resolve({
 										status: 1,
 										uuid: task.uuid,
+										user_mobile: task.user_mobile,
 										in_queue: 0,
 										attempts: task.attempts + 1,
-										expiry_date: moment().add(12, 'hours'), // TODO: let's start with 12 hours
+										expiry_date: moment().add(12, "h").format(), // TODO: let's start with 12 hours
 										result: JSON.stringify(response),
+										log: JSON.stringify(taskLog.push({ date: moment().format(), attempt: task.attempts + 1, result: response }))
 									});
 								});
 							} catch (error) {
 								console.log(error.message);
+								let taskLog = (task.log === "") ? [] : JSON.parse(task.log);
 								resolve({
 									status: 0,
 									uuid: task.uuid,
+									user_mobile: task.user_mobile,
 									in_queue: 0,
 									attempts: task.attempts + 1,
-									result: JSON.stringify({ error: true, message: error.message }),
+									result: JSON.stringify({ error: true, message: "internal error occured" }),
+									log: JSON.stringify(taskLog.push({ date: moment().format(), attempt: task.attempts + 1, result: error }))
 								});
 							}
 						}
@@ -135,30 +149,39 @@ async function scrapOnBeforward(task) {
 					.catch(async (error) => {
 						// interpret error and maybe display something on the UI
 						console.log(error);
+						let taskLog = (task.log === "") ? [] : JSON.parse(task.log);
 						resolve({
 							status: 1,
 							uuid: task.uuid,
+							user_mobile: task.user_mobile,
 							in_queue: 0,
 							attempts: task.attempts + 1,
 							result: JSON.stringify({ error: true, message: "part not found/invalid OEM part number" }),
+							log: JSON.stringify(taskLog.push({ date: moment().format(), attempt: task.attempts + 1, result: error }))
 						});
 					});
 			} catch (error) {
+				let taskLog = (task.log === "") ? [] : JSON.parse(task.log);
 				resolve({
 					status: 0,
 					uuid: task.uuid,
+					user_mobile: task.user_mobile,
 					in_queue: 0,
 					attempts: task.attempts + 1,
 					result: JSON.stringify({ error: true, message: error.message }),
+					log: JSON.stringify(taskLog.push({ date: moment().format(), attempt: task.attempts + 1, result: error }))
 				});
 			}
 		} else {
+			let taskLog = (task.log === "") ? [] : JSON.parse(task.log);
 			resolve({
 				status: 1,
 				uuid: task.uuid,
+				user_mobile: task.user_mobile,
 				in_queue: 0,
 				attempts: task.attempts + 1,
 				result: JSON.stringify({ error: true, message: "invalid OEM part number" }),
+				log: JSON.stringify(taskLog.push({ date: moment().format(), attempt: task.attempts + 1, result: { error: true, message: "invalid OEM part number" } }))
 			});
 		}
 	});
@@ -193,8 +216,8 @@ async function addProductToWooCommerce(objProduct, task) {
 						});
 
 						resultObj.error = false;
-						resultObj.data = modifiedArr; // for sending to user
-						resultObj.data_full = catalogArr; // for cataloging - this is unnecessary, this already exists in WooCommerce
+						resultObj.message = modifiedArr; // for sending to user
+						resultObj.catalogue = catalogArr; // for cataloging - this is unnecessary, this already exists in WooCommerce
 						resolve(resultObj);
 					} catch (error) {
 						resultObj.error = true;
