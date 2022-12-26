@@ -157,7 +157,7 @@ async function processPendingBroadcastTasks() {
 			const promises = pendingTasks.data.map(async (task) => {
 				// mark record as processing
 				lockUnlockTask("result_cast", { uuid: task.uuid, lock: 1 });
-				return await sendWhatsAppMessage(task).then(async function (response) { // Facebook Send Message
+				return await processWhatsAppMessage(task).then(async function (response) { // Facebook Send Message
 					// console.log(`${task.uuid} -> `, response);
 					return response;
 				});
@@ -373,7 +373,7 @@ async function sendPlainTextMessage(userNumber, messageToSend) {
 	});
 }
 
-async function sendWhatsAppMessage(task) {
+async function processWhatsAppMessage(task) {
 	return new Promise(async function (resolve, reject) {
 		try {
 			if (task.payload_type == 0) { // plain text
@@ -445,10 +445,9 @@ async function sendWhatsAppMessage(task) {
 						});
 					});
 			}
-
 		} catch (error) {
 			resolve({
-				status: 0,
+				status: 2,
 				uuid: task.uuid,
 				in_queue: 0,
 				attempts: task.attempts + 1,
