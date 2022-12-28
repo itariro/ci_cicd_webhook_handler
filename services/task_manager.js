@@ -231,7 +231,7 @@ async function getAllPendingBroadcastTasks() {
 						[Op.lte]: 5,
 					},
 					createdAt: {
-						[Op.gte]: Sequelize.literal("NOW() - (INTERVAL '5 MINUTE')"),
+						[Op.lte]: Sequelize.literal("NOW() - (INTERVAL '10 MINUTE')"),
 					},
 				},
 			});

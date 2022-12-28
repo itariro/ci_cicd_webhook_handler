@@ -18,7 +18,7 @@ router.get("/drop/:resource", async function (req, res, next) {
 
 		res.status(200).json({
 			error: false,
-			message: `resource recreated -> ${req.params.resource}`,
+			message: `resource purged -> ${req.params.resource}`,
 		});
 		return;
 	} catch (error) {

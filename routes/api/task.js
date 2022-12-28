@@ -25,7 +25,6 @@ router.get("/:systemid", async function (req, res, next) {
 router.post("/:systemid", async function (req, res, next) {
 	try {
 		const { v4: uuidv4 } = require('uuid');
-
 		registerUserGeneric({ mobile_number: req.body.user, status: 1, balance: 2.00 }, // each new user gets £2 worth of points : CAC
 			function (user_err, user_result) {
 				if (user_err) {
