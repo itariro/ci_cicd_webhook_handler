@@ -1,3 +1,6 @@
+require("dotenv").config();
+const accessToken = process.env.FACEBOOK_ACCESS_TOKEN;
+
 const text = {
   "messaging_product": "whatsapp",
   "recipient_type": "individual",
@@ -80,9 +83,15 @@ const resultList = {
 	"create": []
 }
 
+const facebookBatchAPIObj = {
+  "access_token": accessToken,
+  "requests": []
+}
+
 if (exports) {
   exports.plainText = text;
   exports.interactiveList = list;
   exports.resultListForWooCommerce = resultList;
   exports.interactiveReplyButton = replyButton;
+  exports.facebookBatchAPIObj = facebookBatchAPIObj;
 }

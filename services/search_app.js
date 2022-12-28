@@ -1,12 +1,16 @@
+const moment = require("moment");
+var axios = require("axios");
+const { v4: uuidv4 } = require('uuid');
 const {
-	resultListForWooCommerce
+	resultListForWooCommerce,
+	facebookBatchAPIObj,
 } = require("../utils/message_formats");
 const {
 	createProductsList,
 	createProductsForWooCommerceList,
-	createProductsListForCatalogue
+	createProductsListForCatalogue,
+	createProductsForFacebookCommerceList,
 } = require("../utils/message_helper");
-const moment = require("moment");
 
 async function scrapOnBeforward(task) {
 	let partNumber = task.query.replace(/\s/g, "");
@@ -79,20 +83,22 @@ async function scrapOnBeforward(task) {
 									if (row_key !== replacedKey) {
 										// id
 										if (replacedKey == "ref_nogenuine_no") {
-											row["sku"] = task.user_mobile + "-" + row[row_key].replace(/\W/g, "");
+											row["custom_label_0"] = task.user_mobile + "-" + row[row_key].replace(/\W/g, "");
+											row["retailer_product_group_id"] = `${task.user_mobile}-${partNumber}`;
+											row["sku"] = uuidv4();
 										}
 
 										// price
 										if (replacedKey == "price") {
-											row["clean_price"] = parseFloat(
+											row["clean_price"] = parseInt(
 												row[row_key].replace("$", "")
-											);
+											) * 100;
 										}
 
 										// name
 										if (replacedKey == "name") {
-											row["condition"] = "Used";
-											row["thumbnail"] = "Used";
+											row["condition"] = "used";
+											row["thumbnail"] = "used";
 										}
 										row[replacedKey] =
 											replacedKey == "name"
@@ -106,17 +112,37 @@ async function scrapOnBeforward(task) {
 
 							//console.log('results -> ', results);
 							try {
+
+								// TODO: WE STILL NEED WOOCOMMERCE?
 								// compile products to add to WooCommerce
-								const objForWooCommerce = results.map(
-									createProductsForWooCommerceList
-								);
-								let productsForAdditionToWooCommerce = resultListForWooCommerce;
-								productsForAdditionToWooCommerce.create = objForWooCommerce;
+								//const objForWooCommerce = results.map(
+								//	createProductsForWooCommerceList
+								//);
+								//let productsForAdditionToWooCommerce = resultListForWooCommerce;
+								//productsForAdditionToWooCommerce.create = objForWooCommerce;
 
 								//console.log('objForWooCommerce -> ', objForWooCommerce);
-								await addProductToWooCommerce(
-									productsForAdditionToWooCommerce,
-									task
+								// TODO: IMPORTANT: DETERMINE WHATS RELEVANT HERE
+
+								let payload = {
+									modifiedArr: results.map(
+										createProductsList
+									), catalogArr: results.map(
+										createProductsListForCatalogue
+									)
+								};
+
+								// to be sent to the catalogue
+								const objForFacebookBatchAPI = results.map(
+									createProductsForFacebookCommerceList
+								);
+								let productsForAdditionToFacebookCommerce = facebookBatchAPIObj;
+								productsForAdditionToFacebookCommerce.requests =
+									objForFacebookBatchAPI;
+
+								await addProductToFacebookCommerce(
+									productsForAdditionToFacebookCommerce,
+									payload
 								).then(function (response) {
 									// console.log("woo => ", response);
 									let taskLog = (task.log === "") ? [] : JSON.parse(task.log);
@@ -196,7 +222,7 @@ async function addProductToWooCommerce(objProduct, task) {
 		consumerSecret: "cs_cacb5dd089b7c84981162190b55615f6cd20f543",
 		version: "wc/v3",
 	});
-	let resultObj = { error: true, message: "this is a generic message", data: [], data_full: [] };
+	let resultObj = { error: true, message: "this is a generic message", catalogue: [] };
 
 	return new Promise(async function (resolve, reject) {
 		// Create a product see more in https://woocommerce.github.io/woocommerce-rest-api-docs/#product-properties
@@ -233,6 +259,52 @@ async function addProductToWooCommerce(objProduct, task) {
 					task.user_mobile,
 					"internal error, please try again later"
 				);
+				resultObj.error = true;
+				resultObj.message = error.response;
+				resolve(resultObj);
+			});
+	});
+}
+
+async function addProductToFacebookCommerce(objProduct, objPayload) {
+	let resultObj = { error: true, message: "this is a generic message", catalogue: [] };
+	return new Promise(async function (resolve, reject) {
+		// Create a product see more in https://woocommerce.github.io/woocommerce-rest-api-docs/#product-properties
+		var data = JSON.stringify(objProduct);
+		var config = {
+			method: "post",
+			url: "https://graph.facebook.com/v15.0/1154340098851255/batch",
+			headers: {
+				"Content-Type": "application/json",
+			},
+			data: data,
+		};
+		axios(config)
+			.then(async (response) => {
+				// Successful request
+				console.log("Response Status:", response.status);
+				if (Array.isArray(response.data.handles)) {
+					try {
+						const { modifiedArr, catalogArr } = objPayload;
+						// TODO: IMPORTANT : NARROW DOWN THE OPTIONS TO ONLY WHATS NECESSARY & RELEVANT
+						resultObj.error = false;
+						resultObj.message = modifiedArr; // for sending to user
+						resultObj.catalogue = catalogArr; // for cataloging - this is unnecessary, this already exists in WooCommerce
+						resolve(resultObj);
+					} catch (error) {
+						resultObj.error = true;
+						resultObj.message = error;
+						resolve(resultObj);
+						console.log(error);
+					}
+				} else {
+					resultObj.error = true;
+					resultObj.message = error;
+					resolve(resultObj);
+					console.log(error);
+				}
+			})
+			.catch(async (error) => {
 				resultObj.error = true;
 				resultObj.message = error.response;
 				resolve(resultObj);

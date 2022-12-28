@@ -1,5 +1,5 @@
 const db = require("./db");
-const { Op } = require("sequelize");
+const { Sequelize, Op } = require("sequelize");
 const { scrapOnBeforward } = require("./search_app");
 const { sendWhatsAppMessage } = require("../utils/message_helper");
 const { interactiveList, plainText } = require("../utils/message_formats");
@@ -216,8 +216,23 @@ async function getAllPendingBroadcastTasks() {
 		);
 		if (tableModel != null) {
 			const pendingTasks = await tableModel.model_name.findAll({
+				// where: {
+				// 	[Op.and]: [{ attempts: [0, 1, 2, 3, 4] },
+				// 	{ status: 0 },
+				// 	{ in_queue: 0 },
+				// 		updatedAt: {
+				// 		[Op.lte]: Sequelize.literal("NOW() - (INTERVAL '5 MINUTE')"),
+				// 	}], //TODO: we should fix this, ideally x>=0 AND <=4
+				// },
 				where: {
-					[Op.and]: [{ attempts: [0, 1, 2, 3, 4] }, { status: 0 }, { in_queue: 0 }], //TODO: we should fix this, ideally x>=0 AND <=4
+					status: 0,
+					in_queue: 0,
+					attempts: {
+						[Op.lte]: 5,
+					},
+					createdAt: {
+						[Op.gte]: Sequelize.literal("NOW() - (INTERVAL '5 MINUTE')"),
+					},
 				},
 			});
 			// process the outstanding TASKS HERE
@@ -461,18 +476,55 @@ async function processWhatsAppMessage(task) {
 							})
 						});
 					})
+
+
 					.catch(function (error) {
-						console.log(error);
-						resolve({
-							status: 0,
-							uuid: task.uuid,
-							in_queue: 0,
-							attempts: task.attempts + 1,
-							result: JSON.stringify({
-								error: true,
-								message: error,
-							})
-						});
+						if (error.response) {
+							// The request was made and the server responded with a status code
+							// that falls out of the range of 2xx
+							console.log(error.response.data);
+							console.log(error.response.status);
+							//console.log(error.response.headers);
+							resolve({
+								status: 0,
+								uuid: task.uuid,
+								in_queue: 0,
+								attempts: task.attempts + 1,
+								result: JSON.stringify({
+									error: true,
+									message: error.response.data,
+								})
+							});
+						} else if (error.request) {
+							// The request was made but no response was received
+							// `error.request` is an instance of XMLHttpRequest in the browser and an instance of
+							// http.ClientRequest in node.js
+							console.log(error.request);
+							resolve({
+								status: 0,
+								uuid: task.uuid,
+								in_queue: 0,
+								attempts: task.attempts + 1,
+								result: JSON.stringify({
+									error: true,
+									message: error.request,
+								})
+							});
+						} else {
+							// Something happened in setting up the request that triggered an Error
+							console.log('Error', error.message);
+							resolve({
+								status: 0,
+								uuid: task.uuid,
+								in_queue: 0,
+								attempts: task.attempts + 1,
+								result: JSON.stringify({
+									error: true,
+									message: error.message,
+								})
+							});
+						}
+						console.log(error.config);
 					});
 			}
 		} catch (error) {

@@ -34,19 +34,23 @@ async function updateWhatsAppMessage(data) {
 
 function createProductsList(product) {
 	return {
-		"product_retailer_id": `${product.sku}_${product.id}`
+		"product_retailer_id": `${product.sku}`
+		//"product_retailer_id": `${product.sku}_${product.id}`
 	}
 }
 
 function createProductsListForCatalogue(product) {
 	return {
-		"facebook_commerce_id": `${product.sku}_${product.id}`,
-		"description": product.description,
-		"price": product.price,
-		"permalink": product.permalink,
+		// "facebook_commerce_id": `${product.sku}_${product.id}`, WooCommerce
+		//"woocommerce_id": product.id,
+
+		"facebook_commerce_id": `${product.sku}`,
+		"description": product.name,
+		"price": product.clean_price,
+		"currency": "USD",
+		"permalink": `https://parts.kuchado.co.uk?p=${product.sku}`,
 		"images": product.images,
 		"date_created": product.date_created,
-		"woocommerce_id": product.id,
 		"sku": product.sku
 	}
 }
@@ -76,6 +80,37 @@ function createProductsForWooCommerceList(product) {
 				"src": "http://demo.woothemes.com/woocommerce/wp-content/uploads/sites/56/2013/06/T_2_back.jpg"
 			}
 		]
+	}
+}
+
+function createProductsForFacebookCommerceList(product) {
+	return {
+		"method": "CREATE",
+		"retailer_id":`${product.sku}`,
+		"data": {
+			"availability": "in stock",
+			"inventory": 1,
+			"custom_label_0": `${product.custom_label_0}`,
+			"brand": "Unspecified",
+			"category": "motor-vehicle-parts",
+			"description":  product.name,
+			"image_url": "https://i8.amplience.net/i/jpl/jd_172907_a?qlt=92&w=900&h=637&v=1&fmt=auto",
+			"name": product.name,
+			"price":  `${product.clean_price}`,
+			"currency": "USD",
+			"shipping": [
+				{
+					"country": "US",
+					"region": "CA",
+					"service": "service",
+					"price_value": "10",
+					"price_currency": "USD"
+				}
+			],
+			"condition": `${product.condition}`,
+			"url": `https://parts.kuchado.co.uk?p=${product.sku}`,
+			"retailer_product_group_id": `${product.retailer_product_group_id}`
+		}
 	}
 }
 
@@ -189,5 +224,6 @@ module.exports = {
 	getMessageData,
 	createProductsList,
 	createProductsListForCatalogue,
-	createProductsForWooCommerceList
+	createProductsForWooCommerceList,
+	createProductsForFacebookCommerceList
 };
