@@ -45,6 +45,9 @@ app.use(compression());
 /* tasks route */
 app.use("/api/v2/task", require("./routes/api/task"));
 
+/* catalogue route */
+app.use("/api/v2/catalogue", require("./routes/api/catalogue"));
+
 /* incidents route */
 app.use("/api/v2/incident", require("./routes/api/incident"));
 
