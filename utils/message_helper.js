@@ -122,92 +122,19 @@ function createProductsForCatalogueList(product) {
 		"sku": `${product.sku}`, // uuid based
 		"availability": "in stock",
 		"inventory": 1,
-		"custom_label_0": `${product.custom_label_0}`,
 		"brand": "Unspecified",
 		"category": "motor-vehicle-parts",
-		"description":  product.name,
+		"description":  `${product.name}`,
 		"image_url": "https://i8.amplience.net/i/jpl/jd_172907_a?qlt=92&w=900&h=637&v=1&fmt=auto",
-		"name": product.name,
+		"name": `${product.name}`,
 		"price":  `${product.clean_price}`,
 		"currency": "USD",
 		"shipping": `${product.shipping}`,
 		"condition": `${product.condition}`,
 		"source_retailer": `${product.source_retailer}`,
-		"source_retailer_sku": `${product.source_retailer_sku}`
+		"source_retailer_sku": `${product.source_retailer_sku}`,
+		"task_uuid": `${product.task_uuid}`
 	}
-}
-
-function getMessageData(recipient, order) {
-	// const { messageTemplates } = require('./message_templates')
-	// const messageTemplate = messageTemplates[order.statusId - 1]
-
-	// let messageParameters
-
-	// switch (messageTemplate.name) {
-	// 	case 'welcome':
-	// 		messageParameters = [
-	// 			{ type: "text", text: order.customer.split(' ')[0] },
-	// 		];
-	// 		break;
-	// 	case 'payment_analysis':
-	// 		messageParameters = [
-	// 			{ type: "text", text: order.customer.split(' ')[0] },
-	// 			{ type: "text", text: products[order.items[0].productId - 1].name },
-	// 		];
-	// 		break;
-	// 	case 'payment_approved':
-	// 		messageParameters = [
-	// 			{ type: "text", text: order.customer.split(' ')[0] },
-	// 			{ type: "text", text: order.id },
-	// 			{ type: "text", text: order.deliveryDate },
-	// 		];
-	// 		break;
-	// 	case 'invoice_available':
-	// 		messageParameters = [
-	// 			{ type: "text", text: order.customer.split(' ')[0] },
-	// 			{ type: "text", text: products[order.items[0].productId - 1].name },
-	// 			{ type: "text", text: `https://customer.your-awesome-grocery-store-demo.com/my-account/orders/${order.id}` },
-	// 		];
-	// 		break;
-	// 	case 'order_picked_packed':
-	// 		messageParameters = [
-	// 			{ type: "text", text: order.customer.split(' ')[0] },
-	// 			{ type: "text", text: order.id },
-	// 			{ type: "text", text: `https://customer.your-awesome-grocery-store-demo.com/my-account/orders/${order.id}` },
-	// 		];
-	// 		break;
-	// 	case 'order_in_transit':
-	// 		messageParameters = [
-	// 			{ type: "text", text: order.customer.split(' ')[0] },
-	// 			{ type: "text", text: order.id },
-	// 			{ type: "text", text: order.deliveryDate },
-	// 			{ type: "text", text: `https://customer.your-awesome-grocery-store-demo.com/my-account/orders/${order.id}` },
-	// 		];
-	// 		break;
-	// 	case 'order_delivered':
-	// 		messageParameters = [
-	// 			{ type: "text", text: order.customer.split(' ')[0] },
-	// 			{ type: "text", text: order.id },
-	// 			{ type: "text", text: order.deadlineDays },
-	// 		];
-	// 		break;
-	// }
-
-	// const messageData = {
-	// 	messaging_product: "whatsapp",
-	// 	to: recipient,
-	// 	type: "template",
-	// 	template: {
-	// 		name: process.env.TEMPLATE_NAME_PREFIX + '_' + messageTemplate.name,
-	// 		language: { "code": "en_US" },
-	// 		components: [{
-	// 			type: "body",
-	// 			parameters: messageParameters
-	// 		}]
-	// 	}
-	// }
-
-	// return JSON.stringify(messageData);
 }
 
 async function listTemplates() {
@@ -244,7 +171,6 @@ module.exports = {
 	updateWhatsAppMessage,
 	listTemplates,
 	createMessageTemplate,
-	getMessageData,
 	createProductsList,
 	createProductsListForCatalogue,
 	createProductsForWooCommerceList,

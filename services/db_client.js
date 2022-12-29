@@ -285,14 +285,14 @@ async function createResourceBulkGeneric(resourceName, resourceChildren, callbac
 		let tableModel = global.CURRENT_MODELS.find((tableProperties) => tableProperties.table_name === resourceName);
 		if (tableModel != null) {
 			await tableModel.model_name.bulkCreate(resourceChildren)
-				.then(() => {
-					console.log("Users data have been saved")
+				.then(res => {
+					console.log(res)
 					callback(null, {
 						error: false,
-						data: newRecord,
+						data: res,
 					});
-				})
-				.catch(function (error) {
+				}).catch((error) => {
+					console.error('Failed to create a new record : ', error);
 					callback(null, {
 						error: true,
 						message: error,

@@ -75,6 +75,8 @@ async function scrapOnBeforward(task) {
 								});
 							});
 
+							const resExpiryDate = moment().add(3, "h").format();
+							// CLEAN UP
 							Object.keys(results).forEach((key) => {
 								const row = results[key];
 								Object.keys(row).forEach((row_key) => {
@@ -85,9 +87,11 @@ async function scrapOnBeforward(task) {
 									if (row_key !== replacedKey) {
 										// id
 										if (replacedKey == "ref_nogenuine_no") {
-											row["custom_label_0"] = task.user_mobile + "-" + row[row_key].replace(/\W/g, "");
-											row["retailer_product_group_id"] = `${task.user_mobile}-${partNumber}`;
-											row["sku"] = uuidv4();
+											row["source_retailer_sku"] = row[row_key].replace(/\W/g, "");
+											row["source_retailer"] = "Beforward"; // grouping for similar searches
+											row["sku"] = uuidv4(); // unique identifier
+											row["user_mobile"] = task.user_mobile;
+											row["task_uuid"] = task.uuid;
 										}
 
 										// price
@@ -101,6 +105,7 @@ async function scrapOnBeforward(task) {
 										if (replacedKey == "name") {
 											row["condition"] = "used";
 											row["thumbnail"] = "used";
+											row["expiry_date"] = resExpiryDate;
 										}
 										row[replacedKey] =
 											replacedKey == "name"
@@ -115,7 +120,7 @@ async function scrapOnBeforward(task) {
 							//console.log('results -> ', results);
 							try {
 
-								// TODO: WE STILL NEED WOOCOMMERCE?
+								// TODO: DO WE STILL NEED WOOCOMMERCE?
 								// compile products to add to WooCommerce
 								//const objForWooCommerce = results.map(
 								//	createProductsForWooCommerceList
@@ -126,18 +131,18 @@ async function scrapOnBeforward(task) {
 								//console.log('objForWooCommerce -> ', objForWooCommerce);
 								// TODO: IMPORTANT: DETERMINE WHATS RELEVANT HERE
 
-								let payload = {
-									modifiedArr: results.map(
-										createProductsList
-									), catalogArr: results.map(
-										createProductsListForCatalogue
-									)
-								};
+								// let payload = {
+								// 	modifiedArr: results.map(
+								// 		createProductsList
+								// 	), catalogArr: results.map(
+								// 		createProductsListForCatalogue
+								// 	)
+								// };
 
 								// to be sent to the catalogue(user)
-								const objForCatalogueBulkCreate = results.map(
-									createProductsForCatalogueList
-								);
+								
+
+								// TODO: DO WE STILL NEED FACEBOOK COMMERCE SYNC?
 
 								// to be sent to the catalogue(facebook)
 								// const objForFacebookBatchAPI = results.map(
@@ -147,8 +152,12 @@ async function scrapOnBeforward(task) {
 								// productsForAdditionToFacebookCommerce.requests =
 								// 	objForFacebookBatchAPI;
 
+								const objForCatalogueBulkCreate = [results.map(
+									createProductsForCatalogueList
+								)];
+
 								await addProductToUserCatalogue(
-									[objForCatalogueBulkCreate],
+									objForCatalogueBulkCreate,
 									payload
 								).then(function (response) {
 									// console.log("woo => ", response);
@@ -320,7 +329,7 @@ async function addProductToFacebookCommerce(objProduct, objPayload) {
 }
 
 async function addProductToUserCatalogue(objProduct, objPayload) {
-	let resultObj = { error: true, message: "this is a generic message", catalogue: [] };
+	let resultObj = { error: true, message: "this is a generic message"};
 	return new Promise(async function (resolve, reject) {
 		createResourceBulkGeneric(
 			"user_mobile_catalogue", objProduct,
@@ -336,8 +345,7 @@ async function addProductToUserCatalogue(objProduct, objPayload) {
 						const { modifiedArr, catalogArr } = objPayload;
 						// TODO: IMPORTANT : NARROW DOWN THE OPTIONS TO ONLY WHATS NECESSARY & RELEVANT
 						resultObj.error = false;
-						resultObj.message = modifiedArr; // for sending to user
-						resultObj.catalogue = catalogArr; // for cataloging - this is unnecessary, this already exists in WooCommerce
+						resultObj.message = task_result; // for sending to user
 						resolve(resultObj);
 					} else {
 						resultObj.error = true;
