@@ -114,6 +114,29 @@ function createProductsForFacebookCommerceList(product) {
 	}
 }
 
+function createProductsForCatalogueList(product) {
+	return {
+		"status": 1, // 0: expired, 1: active, 2: purchased 
+		"expiry_date": `${product.expiry_date}`,
+		"user_mobile": `${product.user_mobile}`,
+		"sku": `${product.sku}`, // uuid based
+		"availability": "in stock",
+		"inventory": 1,
+		"custom_label_0": `${product.custom_label_0}`,
+		"brand": "Unspecified",
+		"category": "motor-vehicle-parts",
+		"description":  product.name,
+		"image_url": "https://i8.amplience.net/i/jpl/jd_172907_a?qlt=92&w=900&h=637&v=1&fmt=auto",
+		"name": product.name,
+		"price":  `${product.clean_price}`,
+		"currency": "USD",
+		"shipping": `${product.shipping}`,
+		"condition": `${product.condition}`,
+		"source_retailer": `${product.source_retailer}`,
+		"source_retailer_sku": `${product.source_retailer_sku}`
+	}
+}
+
 function getMessageData(recipient, order) {
 	// const { messageTemplates } = require('./message_templates')
 	// const messageTemplate = messageTemplates[order.statusId - 1]
@@ -225,5 +248,6 @@ module.exports = {
 	createProductsList,
 	createProductsListForCatalogue,
 	createProductsForWooCommerceList,
-	createProductsForFacebookCommerceList
+	createProductsForFacebookCommerceList,
+	createProductsForCatalogueList
 };

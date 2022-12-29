@@ -280,6 +280,38 @@ async function createResourceGeneric(resourceName, resourceChildren, callback) {
 	}
 }
 
+async function createResourceBulkGeneric(resourceName, resourceChildren, callback) {
+	try {
+		let tableModel = global.CURRENT_MODELS.find((tableProperties) => tableProperties.table_name === resourceName);
+		if (tableModel != null) {
+			await tableModel.model_name.bulkCreate(resourceChildren)
+				.then(() => {
+					console.log("Users data have been saved")
+					callback(null, {
+						error: false,
+						data: newRecord,
+					});
+				})
+				.catch(function (error) {
+					callback(null, {
+						error: true,
+						message: error,
+					});
+				});
+		} else {
+			callback(null, {
+				error: true,
+				message: "resource does not exist",
+			});
+		}
+	} catch (error) {
+		callback(null, {
+			error: true,
+			message: error,
+		});
+	}
+}
+
 async function readSingleResourceGeneric(resourceName, resourceFilter, callback) {
 	try {
 		let tableModel = global.CURRENT_MODELS.find((tableProperties) => tableProperties.table_name === resourceName);
@@ -382,5 +414,6 @@ module.exports = {
 	tableActionGeneric,
 	createResourceGeneric,
 	readMultipleAllResourceGeneric,
-	readMultipleResourceGeneric
+	readMultipleResourceGeneric,
+	createResourceBulkGeneric
 };

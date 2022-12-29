@@ -10,7 +10,9 @@ const {
 	createProductsForWooCommerceList,
 	createProductsListForCatalogue,
 	createProductsForFacebookCommerceList,
+	createProductsForCatalogueList,
 } = require("../utils/message_helper");
+const { createResourceBulkGeneric } = require("./db_client");
 
 async function scrapOnBeforward(task) {
 	let partNumber = task.query.replace(/\s/g, "");
@@ -132,16 +134,21 @@ async function scrapOnBeforward(task) {
 									)
 								};
 
-								// to be sent to the catalogue
-								const objForFacebookBatchAPI = results.map(
-									createProductsForFacebookCommerceList
+								// to be sent to the catalogue(user)
+								const objForCatalogueBulkCreate = results.map(
+									createProductsForCatalogueList
 								);
-								let productsForAdditionToFacebookCommerce = facebookBatchAPIObj;
-								productsForAdditionToFacebookCommerce.requests =
-									objForFacebookBatchAPI;
 
-								await addProductToFacebookCommerce(
-									productsForAdditionToFacebookCommerce,
+								// to be sent to the catalogue(facebook)
+								// const objForFacebookBatchAPI = results.map(
+								// 	createProductsForFacebookCommerceList
+								// );
+								// let productsForAdditionToFacebookCommerce = facebookBatchAPIObj;
+								// productsForAdditionToFacebookCommerce.requests =
+								// 	objForFacebookBatchAPI;
+
+								await addProductToUserCatalogue(
+									[objForCatalogueBulkCreate],
 									payload
 								).then(function (response) {
 									// console.log("woo => ", response);
@@ -309,6 +316,39 @@ async function addProductToFacebookCommerce(objProduct, objPayload) {
 				resultObj.message = error.response;
 				resolve(resultObj);
 			});
+	});
+}
+
+async function addProductToUserCatalogue(objProduct, objPayload) {
+	let resultObj = { error: true, message: "this is a generic message", catalogue: [] };
+	return new Promise(async function (resolve, reject) {
+		createResourceBulkGeneric(
+			"user_mobile_catalogue", objProduct,
+			function (task_err, task_result) {
+				if (task_err) {
+					resultObj.error = true;
+					resultObj.message = "internal error occured: CATADD-0";
+					resolve(resultObj);
+					console.log(task_err);				
+					return;
+				} else {
+					if (!task_result.error) {
+						const { modifiedArr, catalogArr } = objPayload;
+						// TODO: IMPORTANT : NARROW DOWN THE OPTIONS TO ONLY WHATS NECESSARY & RELEVANT
+						resultObj.error = false;
+						resultObj.message = modifiedArr; // for sending to user
+						resultObj.catalogue = catalogArr; // for cataloging - this is unnecessary, this already exists in WooCommerce
+						resolve(resultObj);
+					} else {
+						resultObj.error = true;
+						resultObj.message = "internal error occured: CATADD-1";
+						resolve(resultObj);
+						console.log(task_result);
+					}
+					return;
+				}
+			}
+		);
 	});
 }
 
