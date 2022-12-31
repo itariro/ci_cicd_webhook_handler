@@ -35,7 +35,6 @@ async function processPendingTasks() {
 						// 0 = plain text, 1 = interactive
 						const taskResult = JSON.parse(task.result);
 						const taskPayload = (typeof taskResult.message === 'string') ? { payload: taskResult.message, type: 0 } : { payload: JSON.stringify(taskResult.message), type: 1 };
-
 						createResourceGeneric(
 							"result_cast",
 							{
@@ -228,11 +227,11 @@ async function getAllPendingBroadcastTasks() {
 					status: 0,
 					in_queue: 0,
 					attempts: {
-						[Op.lte]: 5,
+						[Op.lte]: 1,
 					},
-					createdAt: {
-						[Op.lte]: Sequelize.literal("NOW() - (INTERVAL '10 MINUTE')"),
-					},
+					// createdAt: {
+					// 	[Op.lte]: Sequelize.literal("NOW() - (INTERVAL '10 MINUTE')"),
+					// },
 				},
 			});
 			// process the outstanding TASKS HERE
@@ -427,7 +426,6 @@ async function processWhatsAppMessage(task) {
 				plainTextMessage.text.body = task.payload;
 				await sendWhatsAppMessage(plainTextMessage)
 					.then(function (response) {
-						console.log(response); // success
 						resolve({
 							status: 1,
 							uuid: task.uuid,
@@ -435,12 +433,11 @@ async function processWhatsAppMessage(task) {
 							attempts: task.attempts + 1,
 							result: JSON.stringify({
 								error: false,
-								message: response,
+								message: response.data,
 							})
 						});
 					})
 					.catch(function (error) {
-						console.log(error);
 						resolve({
 							status: 0,
 							uuid: task.uuid,
@@ -464,7 +461,6 @@ async function processWhatsAppMessage(task) {
 
 				await sendWhatsAppMessage(productsList)
 					.then(function (response) {
-						console.log(response.data);
 						resolve({
 							status: 1,
 							uuid: task.uuid,
@@ -476,8 +472,6 @@ async function processWhatsAppMessage(task) {
 							})
 						});
 					})
-
-
 					.catch(function (error) {
 						if (error.response) {
 							// The request was made and the server responded with a status code
