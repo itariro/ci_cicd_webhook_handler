@@ -92,13 +92,13 @@ async function scrapOnBeforward(task) {
 											row["sku"] = uuidv4(); // unique identifier
 											row["user_mobile"] = task.user_mobile;
 											row["task_uuid"] = task.uuid;
+											row["shipping"] = {};
 										}
 
 										// price
 										if (replacedKey == "price") {
-											row["clean_price"] = parseInt(
-												row[row_key].replace("$", "")
-											) * 100;
+											const clean_price = parseInt(row[row_key].replace("$", ""));
+											row["clean_price"] = Number.isInteger(clean_price) ? (clean_price * 100) : 0;
 										}
 
 										// name
@@ -140,7 +140,7 @@ async function scrapOnBeforward(task) {
 								// };
 
 								// to be sent to the catalogue(user)
-								
+
 
 								// TODO: DO WE STILL NEED FACEBOOK COMMERCE SYNC?
 
@@ -152,13 +152,12 @@ async function scrapOnBeforward(task) {
 								// productsForAdditionToFacebookCommerce.requests =
 								// 	objForFacebookBatchAPI;
 
-								const objForCatalogueBulkCreate = [results.map(
+								const objForCatalogueBulkCreate = results.map(
 									createProductsForCatalogueList
-								)];
+								);
 
 								await addProductToUserCatalogue(
-									objForCatalogueBulkCreate,
-									payload
+									objForCatalogueBulkCreate, task.uuid
 								).then(function (response) {
 									// console.log("woo => ", response);
 									let taskLog = (task.log === "") ? [] : JSON.parse(task.log);
@@ -328,8 +327,9 @@ async function addProductToFacebookCommerce(objProduct, objPayload) {
 	});
 }
 
-async function addProductToUserCatalogue(objProduct, objPayload) {
-	let resultObj = { error: true, message: "this is a generic message"};
+async function addProductToUserCatalogue(objProduct, taskUUID) {
+	let resultObj = { error: true, message: "this is a generic message" };
+	console.log('objProduct -> ', objProduct);
 	return new Promise(async function (resolve, reject) {
 		createResourceBulkGeneric(
 			"user_mobile_catalogue", objProduct,
@@ -337,21 +337,18 @@ async function addProductToUserCatalogue(objProduct, objPayload) {
 				if (task_err) {
 					resultObj.error = true;
 					resultObj.message = "internal error occured: CATADD-0";
-					resolve(resultObj);
-					console.log(task_err);				
+					console.log(task_err); resolve(resultObj);
 					return;
 				} else {
 					if (!task_result.error) {
-						const { modifiedArr, catalogArr } = objPayload;
 						// TODO: IMPORTANT : NARROW DOWN THE OPTIONS TO ONLY WHATS NECESSARY & RELEVANT
 						resultObj.error = false;
-						resultObj.message = task_result; // for sending to user
-						resolve(resultObj);
+						resultObj.message = `We found ${objProduct.length} results matching your search. Please check out, https://kuchando.co.uk/files/index.html?ref=${taskUUID} for more details and actions.`; // for sending to user
+						console.log(task_result); resolve(resultObj);
 					} else {
 						resultObj.error = true;
 						resultObj.message = "internal error occured: CATADD-1";
-						resolve(resultObj);
-						console.log(task_result);
+						console.log(task_result); resolve(resultObj);
 					}
 					return;
 				}

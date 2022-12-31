@@ -127,7 +127,7 @@ function createProductsForCatalogueList(product) {
 		"description":  `${product.name}`,
 		"image_url": "https://i8.amplience.net/i/jpl/jd_172907_a?qlt=92&w=900&h=637&v=1&fmt=auto",
 		"name": `${product.name}`,
-		"price":  `${product.clean_price}`,
+		"price":  product.clean_price,
 		"currency": "USD",
 		"shipping": `${product.shipping}`,
 		"condition": `${product.condition}`,

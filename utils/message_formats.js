@@ -7,7 +7,7 @@ const text = {
   "to": "PHONE_NUMBER",
   "type": "text",
   "text": {
-      "preview_url": false,
+      "preview_url": true,
       "body": "MESSAGE_CONTENTS"
   }
 }

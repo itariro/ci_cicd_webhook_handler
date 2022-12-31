@@ -10,7 +10,7 @@ async function processPendingTasks() {
 	try {
 		const pendingTasks = await getAllPendingTasks();
 		if (!pendingTasks.error) {
-			global.PENDING_TASKS_CRON_JOB.stop();
+			// global.PENDING_TASKS_CRON_JOB.stop();
 			// instead of awaiting this call, create an array of Promises
 			const promises = pendingTasks.data.map(async (task) => {
 				// mark record as processing
@@ -35,7 +35,7 @@ async function processPendingTasks() {
 						// 0 = plain text, 1 = interactive
 						const taskResult = JSON.parse(task.result);
 						const taskPayload = (typeof taskResult.message === 'string') ? { payload: taskResult.message, type: 0 } : { payload: JSON.stringify(taskResult.message), type: 1 };
-						createResourceGeneric(
+						await createResourceGeneric(
 							"result_cast",
 							{
 								uuid: task.uuid,
@@ -55,6 +55,7 @@ async function processPendingTasks() {
 								}
 							}
 						);
+						processPendingBroadcastTasks();
 					}
 				});
 			}
@@ -62,7 +63,8 @@ async function processPendingTasks() {
 	} catch (error) {
 		console.log(error);
 	} finally {
-		global.PENDING_TASKS_CRON_JOB.start();
+		//global.PENDING_TASKS_CRON_JOB.start();
+		processPendingBroadcastTasks();
 	}
 }
 
@@ -181,7 +183,7 @@ async function processPendingBroadcastTasks() {
 	try {
 		const pendingTasks = await getAllPendingBroadcastTasks();
 		if (!pendingTasks.error) {
-			global.QUEUED_TASKS_CRON_JOB.stop();
+			// global.QUEUED_TASKS_CRON_JOB.stop();
 			// instead of awaiting this call, create an array of Promises
 			const promises = pendingTasks.data.map(async (task) => {
 				// mark record as processing
@@ -204,7 +206,7 @@ async function processPendingBroadcastTasks() {
 	} catch (error) {
 		console.log(error);
 	} finally {
-		global.QUEUED_TASKS_CRON_JOB.start();
+		// global.QUEUED_TASKS_CRON_JOB.start();
 	}
 }
 
