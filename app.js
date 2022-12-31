@@ -10,7 +10,7 @@ const logger = require("./middleware/logger");
 const db = require("./services/db");
 const moment = require("moment");
 const { listenForMessages } = require("./services/rabbitmq");
-const { processPendingTasks, processPendingBroadcastTasks, createIncidentLog } = require("./services/task_manager");
+const { createIncidentLog } = require("./services/task_manager");
 const appConfigs = require("./services/api_config").getAPIConfig();
 
 /* Init middleware */
@@ -76,28 +76,28 @@ app.listen(PORT, function () {
         const dbCreateResult = await db.createDatabase();
         if (!dbCreateResult.error) {
           /* start cron job for all tasks in task queue */
-          var CronJob = require("cron").CronJob;
-          global.PENDING_TASKS_CRON_JOB = new CronJob(
-            "* * * * * *",
-            function () {
-              // console.log("pending tasks");
-			  processPendingTasks();
-			},
-            null,
-            false,
-            "Europe/London"
-          );
+        //   var CronJob = require("cron").CronJob;
+        //   global.PENDING_TASKS_CRON_JOB = new CronJob(
+        //     "* * * * * *",
+        //     function () {
+        //       // console.log("pending tasks");
+		// 	  processPendingTasks();
+		// 	},
+        //     null,
+        //     false,
+        //     "Europe/London"
+        //   );
 		  
-		  global.QUEUED_TASKS_CRON_JOB = new CronJob(
-            "* * * * *",
-            function () {
-              console.log(" [*] queued tasks");
-			  processPendingBroadcastTasks();
-            },
-            null,
-            false,
-            "Europe/London"
-          );
+		//   global.QUEUED_TASKS_CRON_JOB = new CronJob(
+        //     "* * * * *",
+        //     function () {
+        //       console.log(" [*] queued tasks");
+		// 	  processPendingBroadcastTasks();
+        //     },
+        //     null,
+        //     false,
+        //     "Europe/London"
+        //   );
           // Use this if the 4th param is default value(false)
           // job.start();
 		  //global.PENDING_TASKS_CRON_JOB.start();

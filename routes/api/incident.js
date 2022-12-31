@@ -4,6 +4,11 @@ const router = express.Router();
 
 /* LIST all incidents */
 router.get("/all", async function (req, res, next) {
+	res.setHeader("Access-Control-Allow-Origin", "*");
+	res.header(
+		"Access-Control-Allow-Headers",
+		"Origin, X-Requested-With, Content-Type, Accept"
+	);
 	try {
 		const recordedIncidents = await getAllIncidents();
 		recordedIncidents.error

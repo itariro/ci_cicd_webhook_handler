@@ -3,8 +3,13 @@ const router = express.Router();
 
 /* LIST all from a specific user */
 router.get("/user/:user_mobile", async function (req, res, next) {
+	res.setHeader("Access-Control-Allow-Origin", "*");
+	res.header(
+		"Access-Control-Allow-Headers",
+		"Origin, X-Requested-With, Content-Type, Accept"
+	);
 	try {
-		const resourceList = await getAllCatalogueItems({user_mobile: req.params.user_mobile});
+		const resourceList = await getAllCatalogueItems({ user_mobile: req.params.user_mobile });
 		resourceList.error
 			? res.status(400).json(resourceList)
 			: res.status(200).json(resourceList);
@@ -18,8 +23,13 @@ router.get("/user/:user_mobile", async function (req, res, next) {
 
 /* LIST all based on a task */
 router.get("/task/:task_uuid", async function (req, res, next) {
+	res.setHeader("Access-Control-Allow-Origin", "*");
+	res.header(
+		"Access-Control-Allow-Headers",
+		"Origin, X-Requested-With, Content-Type, Accept"
+	);
 	try {
-		const resourceList = await getAllCatalogueItems({task_uuid: req.params.task_uuid});
+		const resourceList = await getAllCatalogueItems({ task_uuid: req.params.task_uuid });
 		resourceList.error
 			? res.status(400).json(resourceList)
 			: res.status(200).json(resourceList);

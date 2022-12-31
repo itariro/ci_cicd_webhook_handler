@@ -8,6 +8,11 @@ const { registerUserGeneric } = require("../../services/user_manager");
 
 /* LIST all tasks */
 router.get("/:systemid", async function (req, res, next) {
+	res.setHeader("Access-Control-Allow-Origin", "*");
+	res.header(
+		"Access-Control-Allow-Headers",
+		"Origin, X-Requested-With, Content-Type, Accept"
+	);
 	try {
 		const pendingTasks = await getAllTasks();
 		pendingTasks.error
@@ -23,6 +28,11 @@ router.get("/:systemid", async function (req, res, next) {
 
 /* POST NEW task */
 router.post("/:systemid", async function (req, res, next) {
+	res.setHeader("Access-Control-Allow-Origin", "*");
+	res.header(
+		"Access-Control-Allow-Headers",
+		"Origin, X-Requested-With, Content-Type, Accept"
+	);
 	try {
 		const { v4: uuidv4 } = require('uuid');
 		registerUserGeneric({ mobile_number: req.body.user, status: 1, balance: 2.00 }, // each new user gets £2 worth of points : CAC
@@ -51,7 +61,7 @@ router.post("/:systemid", async function (req, res, next) {
 								}
 							}
 						);
-						processPendingTasks();
+					processPendingTasks();
 					return;
 				}
 			});
