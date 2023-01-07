@@ -343,7 +343,7 @@ async function addProductToUserCatalogue(objProduct, taskUUID) {
 					if (!task_result.error) {
 						// TODO: IMPORTANT : NARROW DOWN THE OPTIONS TO ONLY WHATS NECESSARY & RELEVANT
 						resultObj.error = false;
-						resultObj.message = `We found ${objProduct.length} results matching your search. Please check out, https://kuchando.co.uk/files/index.html?ref=${taskUUID} for more details and actions.`; // for sending to user
+						resultObj.message = `We found ${objProduct.length} results matching your search. Please check out, https://parts.kuchando.co.uk/cart?ref=${taskUUID} for more details and actions.`; // for sending to user
 						console.log(task_result); resolve(resultObj);
 					} else {
 						resultObj.error = true;
